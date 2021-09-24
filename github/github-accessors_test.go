@@ -1417,6 +1417,66 @@ func TestAuthorizationUpdateRequest_GetNoteURL(tt *testing.T) {
 	a.GetNoteURL()
 }
 
+func TestAuthorizedActorsOnly_GetFrom(tt *testing.T) {
+	var zeroValue bool
+	a := &AuthorizedActorsOnly{From: &zeroValue}
+	a.GetFrom()
+	a = &AuthorizedActorsOnly{}
+	a.GetFrom()
+	a = nil
+	a.GetFrom()
+}
+
+func TestAutolink_GetID(tt *testing.T) {
+	var zeroValue int64
+	a := &Autolink{ID: &zeroValue}
+	a.GetID()
+	a = &Autolink{}
+	a.GetID()
+	a = nil
+	a.GetID()
+}
+
+func TestAutolink_GetKeyPrefix(tt *testing.T) {
+	var zeroValue string
+	a := &Autolink{KeyPrefix: &zeroValue}
+	a.GetKeyPrefix()
+	a = &Autolink{}
+	a.GetKeyPrefix()
+	a = nil
+	a.GetKeyPrefix()
+}
+
+func TestAutolink_GetURLTemplate(tt *testing.T) {
+	var zeroValue string
+	a := &Autolink{URLTemplate: &zeroValue}
+	a.GetURLTemplate()
+	a = &Autolink{}
+	a.GetURLTemplate()
+	a = nil
+	a.GetURLTemplate()
+}
+
+func TestAutolinkOptions_GetKeyPrefix(tt *testing.T) {
+	var zeroValue string
+	a := &AutolinkOptions{KeyPrefix: &zeroValue}
+	a.GetKeyPrefix()
+	a = &AutolinkOptions{}
+	a.GetKeyPrefix()
+	a = nil
+	a.GetKeyPrefix()
+}
+
+func TestAutolinkOptions_GetURLTemplate(tt *testing.T) {
+	var zeroValue string
+	a := &AutolinkOptions{URLTemplate: &zeroValue}
+	a.GetURLTemplate()
+	a = &AutolinkOptions{}
+	a.GetURLTemplate()
+	a = nil
+	a.GetURLTemplate()
+}
+
 func TestAutoTriggerCheck_GetAppID(tt *testing.T) {
 	var zeroValue int64
 	a := &AutoTriggerCheck{AppID: &zeroValue}
@@ -1579,6 +1639,271 @@ func TestBranchPolicy_GetProtectedBranches(tt *testing.T) {
 	b.GetProtectedBranches()
 	b = nil
 	b.GetProtectedBranches()
+}
+
+func TestBranchProtectionRule_GetAdminEnforced(tt *testing.T) {
+	var zeroValue bool
+	b := &BranchProtectionRule{AdminEnforced: &zeroValue}
+	b.GetAdminEnforced()
+	b = &BranchProtectionRule{}
+	b.GetAdminEnforced()
+	b = nil
+	b.GetAdminEnforced()
+}
+
+func TestBranchProtectionRule_GetAllowDeletionsEnforcementLevel(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{AllowDeletionsEnforcementLevel: &zeroValue}
+	b.GetAllowDeletionsEnforcementLevel()
+	b = &BranchProtectionRule{}
+	b.GetAllowDeletionsEnforcementLevel()
+	b = nil
+	b.GetAllowDeletionsEnforcementLevel()
+}
+
+func TestBranchProtectionRule_GetAllowForcePushesEnforcementLevel(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{AllowForcePushesEnforcementLevel: &zeroValue}
+	b.GetAllowForcePushesEnforcementLevel()
+	b = &BranchProtectionRule{}
+	b.GetAllowForcePushesEnforcementLevel()
+	b = nil
+	b.GetAllowForcePushesEnforcementLevel()
+}
+
+func TestBranchProtectionRule_GetAuthorizedActorsOnly(tt *testing.T) {
+	var zeroValue bool
+	b := &BranchProtectionRule{AuthorizedActorsOnly: &zeroValue}
+	b.GetAuthorizedActorsOnly()
+	b = &BranchProtectionRule{}
+	b.GetAuthorizedActorsOnly()
+	b = nil
+	b.GetAuthorizedActorsOnly()
+}
+
+func TestBranchProtectionRule_GetAuthorizedDismissalActorsOnly(tt *testing.T) {
+	var zeroValue bool
+	b := &BranchProtectionRule{AuthorizedDismissalActorsOnly: &zeroValue}
+	b.GetAuthorizedDismissalActorsOnly()
+	b = &BranchProtectionRule{}
+	b.GetAuthorizedDismissalActorsOnly()
+	b = nil
+	b.GetAuthorizedDismissalActorsOnly()
+}
+
+func TestBranchProtectionRule_GetCreatedAt(tt *testing.T) {
+	var zeroValue Timestamp
+	b := &BranchProtectionRule{CreatedAt: &zeroValue}
+	b.GetCreatedAt()
+	b = &BranchProtectionRule{}
+	b.GetCreatedAt()
+	b = nil
+	b.GetCreatedAt()
+}
+
+func TestBranchProtectionRule_GetDismissStaleReviewsOnPush(tt *testing.T) {
+	var zeroValue bool
+	b := &BranchProtectionRule{DismissStaleReviewsOnPush: &zeroValue}
+	b.GetDismissStaleReviewsOnPush()
+	b = &BranchProtectionRule{}
+	b.GetDismissStaleReviewsOnPush()
+	b = nil
+	b.GetDismissStaleReviewsOnPush()
+}
+
+func TestBranchProtectionRule_GetID(tt *testing.T) {
+	var zeroValue int64
+	b := &BranchProtectionRule{ID: &zeroValue}
+	b.GetID()
+	b = &BranchProtectionRule{}
+	b.GetID()
+	b = nil
+	b.GetID()
+}
+
+func TestBranchProtectionRule_GetIgnoreApprovalsFromContributors(tt *testing.T) {
+	var zeroValue bool
+	b := &BranchProtectionRule{IgnoreApprovalsFromContributors: &zeroValue}
+	b.GetIgnoreApprovalsFromContributors()
+	b = &BranchProtectionRule{}
+	b.GetIgnoreApprovalsFromContributors()
+	b = nil
+	b.GetIgnoreApprovalsFromContributors()
+}
+
+func TestBranchProtectionRule_GetLinearHistoryRequirementEnforcementLevel(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{LinearHistoryRequirementEnforcementLevel: &zeroValue}
+	b.GetLinearHistoryRequirementEnforcementLevel()
+	b = &BranchProtectionRule{}
+	b.GetLinearHistoryRequirementEnforcementLevel()
+	b = nil
+	b.GetLinearHistoryRequirementEnforcementLevel()
+}
+
+func TestBranchProtectionRule_GetMergeQueueEnforcementLevel(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{MergeQueueEnforcementLevel: &zeroValue}
+	b.GetMergeQueueEnforcementLevel()
+	b = &BranchProtectionRule{}
+	b.GetMergeQueueEnforcementLevel()
+	b = nil
+	b.GetMergeQueueEnforcementLevel()
+}
+
+func TestBranchProtectionRule_GetName(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{Name: &zeroValue}
+	b.GetName()
+	b = &BranchProtectionRule{}
+	b.GetName()
+	b = nil
+	b.GetName()
+}
+
+func TestBranchProtectionRule_GetPullRequestReviewsEnforcementLevel(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{PullRequestReviewsEnforcementLevel: &zeroValue}
+	b.GetPullRequestReviewsEnforcementLevel()
+	b = &BranchProtectionRule{}
+	b.GetPullRequestReviewsEnforcementLevel()
+	b = nil
+	b.GetPullRequestReviewsEnforcementLevel()
+}
+
+func TestBranchProtectionRule_GetRepositoryID(tt *testing.T) {
+	var zeroValue int64
+	b := &BranchProtectionRule{RepositoryID: &zeroValue}
+	b.GetRepositoryID()
+	b = &BranchProtectionRule{}
+	b.GetRepositoryID()
+	b = nil
+	b.GetRepositoryID()
+}
+
+func TestBranchProtectionRule_GetRequireCodeOwnerReview(tt *testing.T) {
+	var zeroValue bool
+	b := &BranchProtectionRule{RequireCodeOwnerReview: &zeroValue}
+	b.GetRequireCodeOwnerReview()
+	b = &BranchProtectionRule{}
+	b.GetRequireCodeOwnerReview()
+	b = nil
+	b.GetRequireCodeOwnerReview()
+}
+
+func TestBranchProtectionRule_GetRequiredApprovingReviewCount(tt *testing.T) {
+	var zeroValue int
+	b := &BranchProtectionRule{RequiredApprovingReviewCount: &zeroValue}
+	b.GetRequiredApprovingReviewCount()
+	b = &BranchProtectionRule{}
+	b.GetRequiredApprovingReviewCount()
+	b = nil
+	b.GetRequiredApprovingReviewCount()
+}
+
+func TestBranchProtectionRule_GetRequiredConversationResolutionLevel(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{RequiredConversationResolutionLevel: &zeroValue}
+	b.GetRequiredConversationResolutionLevel()
+	b = &BranchProtectionRule{}
+	b.GetRequiredConversationResolutionLevel()
+	b = nil
+	b.GetRequiredConversationResolutionLevel()
+}
+
+func TestBranchProtectionRule_GetRequiredDeploymentsEnforcementLevel(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{RequiredDeploymentsEnforcementLevel: &zeroValue}
+	b.GetRequiredDeploymentsEnforcementLevel()
+	b = &BranchProtectionRule{}
+	b.GetRequiredDeploymentsEnforcementLevel()
+	b = nil
+	b.GetRequiredDeploymentsEnforcementLevel()
+}
+
+func TestBranchProtectionRule_GetRequiredStatusChecksEnforcementLevel(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{RequiredStatusChecksEnforcementLevel: &zeroValue}
+	b.GetRequiredStatusChecksEnforcementLevel()
+	b = &BranchProtectionRule{}
+	b.GetRequiredStatusChecksEnforcementLevel()
+	b = nil
+	b.GetRequiredStatusChecksEnforcementLevel()
+}
+
+func TestBranchProtectionRule_GetSignatureRequirementEnforcementLevel(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRule{SignatureRequirementEnforcementLevel: &zeroValue}
+	b.GetSignatureRequirementEnforcementLevel()
+	b = &BranchProtectionRule{}
+	b.GetSignatureRequirementEnforcementLevel()
+	b = nil
+	b.GetSignatureRequirementEnforcementLevel()
+}
+
+func TestBranchProtectionRule_GetStrictRequiredStatusChecksPolicy(tt *testing.T) {
+	var zeroValue bool
+	b := &BranchProtectionRule{StrictRequiredStatusChecksPolicy: &zeroValue}
+	b.GetStrictRequiredStatusChecksPolicy()
+	b = &BranchProtectionRule{}
+	b.GetStrictRequiredStatusChecksPolicy()
+	b = nil
+	b.GetStrictRequiredStatusChecksPolicy()
+}
+
+func TestBranchProtectionRule_GetUpdatedAt(tt *testing.T) {
+	var zeroValue Timestamp
+	b := &BranchProtectionRule{UpdatedAt: &zeroValue}
+	b.GetUpdatedAt()
+	b = &BranchProtectionRule{}
+	b.GetUpdatedAt()
+	b = nil
+	b.GetUpdatedAt()
+}
+
+func TestBranchProtectionRuleEvent_GetAction(tt *testing.T) {
+	var zeroValue string
+	b := &BranchProtectionRuleEvent{Action: &zeroValue}
+	b.GetAction()
+	b = &BranchProtectionRuleEvent{}
+	b.GetAction()
+	b = nil
+	b.GetAction()
+}
+
+func TestBranchProtectionRuleEvent_GetChanges(tt *testing.T) {
+	b := &BranchProtectionRuleEvent{}
+	b.GetChanges()
+	b = nil
+	b.GetChanges()
+}
+
+func TestBranchProtectionRuleEvent_GetOrg(tt *testing.T) {
+	b := &BranchProtectionRuleEvent{}
+	b.GetOrg()
+	b = nil
+	b.GetOrg()
+}
+
+func TestBranchProtectionRuleEvent_GetRepo(tt *testing.T) {
+	b := &BranchProtectionRuleEvent{}
+	b.GetRepo()
+	b = nil
+	b.GetRepo()
+}
+
+func TestBranchProtectionRuleEvent_GetRule(tt *testing.T) {
+	b := &BranchProtectionRuleEvent{}
+	b.GetRule()
+	b = nil
+	b.GetRule()
+}
+
+func TestBranchProtectionRuleEvent_GetSender(tt *testing.T) {
+	b := &BranchProtectionRuleEvent{}
+	b.GetSender()
+	b = nil
+	b.GetSender()
 }
 
 func TestCheckRun_GetApp(tt *testing.T) {
@@ -2941,6 +3266,13 @@ func TestCommunityHealthFiles_GetCodeOfConduct(tt *testing.T) {
 	c.GetCodeOfConduct()
 }
 
+func TestCommunityHealthFiles_GetCodeOfConductFile(tt *testing.T) {
+	c := &CommunityHealthFiles{}
+	c.GetCodeOfConductFile()
+	c = nil
+	c.GetCodeOfConductFile()
+}
+
 func TestCommunityHealthFiles_GetContributing(tt *testing.T) {
 	c := &CommunityHealthFiles{}
 	c.GetContributing()
@@ -2974,6 +3306,36 @@ func TestCommunityHealthFiles_GetReadme(tt *testing.T) {
 	c.GetReadme()
 	c = nil
 	c.GetReadme()
+}
+
+func TestCommunityHealthMetrics_GetContentReportsEnabled(tt *testing.T) {
+	var zeroValue bool
+	c := &CommunityHealthMetrics{ContentReportsEnabled: &zeroValue}
+	c.GetContentReportsEnabled()
+	c = &CommunityHealthMetrics{}
+	c.GetContentReportsEnabled()
+	c = nil
+	c.GetContentReportsEnabled()
+}
+
+func TestCommunityHealthMetrics_GetDescription(tt *testing.T) {
+	var zeroValue string
+	c := &CommunityHealthMetrics{Description: &zeroValue}
+	c.GetDescription()
+	c = &CommunityHealthMetrics{}
+	c.GetDescription()
+	c = nil
+	c.GetDescription()
+}
+
+func TestCommunityHealthMetrics_GetDocumentation(tt *testing.T) {
+	var zeroValue string
+	c := &CommunityHealthMetrics{Documentation: &zeroValue}
+	c.GetDocumentation()
+	c = &CommunityHealthMetrics{}
+	c.GetDocumentation()
+	c = nil
+	c.GetDocumentation()
 }
 
 func TestCommunityHealthMetrics_GetFiles(tt *testing.T) {
@@ -3592,6 +3954,13 @@ func TestDeployKeyEvent_GetAction(tt *testing.T) {
 	d.GetAction()
 	d = nil
 	d.GetAction()
+}
+
+func TestDeployKeyEvent_GetInstallation(tt *testing.T) {
+	d := &DeployKeyEvent{}
+	d.GetInstallation()
+	d = nil
+	d.GetInstallation()
 }
 
 func TestDeployKeyEvent_GetKey(tt *testing.T) {
@@ -5302,6 +5671,13 @@ func TestGitHubAppAuthorizationEvent_GetAction(tt *testing.T) {
 	g.GetAction()
 	g = nil
 	g.GetAction()
+}
+
+func TestGitHubAppAuthorizationEvent_GetInstallation(tt *testing.T) {
+	g := &GitHubAppAuthorizationEvent{}
+	g.GetInstallation()
+	g = nil
+	g.GetInstallation()
 }
 
 func TestGitHubAppAuthorizationEvent_GetSender(tt *testing.T) {
@@ -8427,6 +8803,36 @@ func TestListRepositories_GetTotalCount(tt *testing.T) {
 	l.GetTotalCount()
 }
 
+func TestListSCIMProvisionedIdentitiesOptions_GetCount(tt *testing.T) {
+	var zeroValue int
+	l := &ListSCIMProvisionedIdentitiesOptions{Count: &zeroValue}
+	l.GetCount()
+	l = &ListSCIMProvisionedIdentitiesOptions{}
+	l.GetCount()
+	l = nil
+	l.GetCount()
+}
+
+func TestListSCIMProvisionedIdentitiesOptions_GetFilter(tt *testing.T) {
+	var zeroValue string
+	l := &ListSCIMProvisionedIdentitiesOptions{Filter: &zeroValue}
+	l.GetFilter()
+	l = &ListSCIMProvisionedIdentitiesOptions{}
+	l.GetFilter()
+	l = nil
+	l.GetFilter()
+}
+
+func TestListSCIMProvisionedIdentitiesOptions_GetStartIndex(tt *testing.T) {
+	var zeroValue int
+	l := &ListSCIMProvisionedIdentitiesOptions{StartIndex: &zeroValue}
+	l.GetStartIndex()
+	l = &ListSCIMProvisionedIdentitiesOptions{}
+	l.GetStartIndex()
+	l = nil
+	l.GetStartIndex()
+}
+
 func TestLocation_GetEndColumn(tt *testing.T) {
 	var zeroValue int
 	l := &Location{EndColumn: &zeroValue}
@@ -9017,6 +9423,13 @@ func TestMetaEvent_GetHookID(tt *testing.T) {
 	m.GetHookID()
 }
 
+func TestMetaEvent_GetInstallation(tt *testing.T) {
+	m := &MetaEvent{}
+	m.GetInstallation()
+	m = nil
+	m.GetInstallation()
+}
+
 func TestMetric_GetHTMLURL(tt *testing.T) {
 	var zeroValue string
 	m := &Metric{HTMLURL: &zeroValue}
@@ -9045,6 +9458,26 @@ func TestMetric_GetName(tt *testing.T) {
 	m.GetName()
 	m = nil
 	m.GetName()
+}
+
+func TestMetric_GetNodeID(tt *testing.T) {
+	var zeroValue string
+	m := &Metric{NodeID: &zeroValue}
+	m.GetNodeID()
+	m = &Metric{}
+	m.GetNodeID()
+	m = nil
+	m.GetNodeID()
+}
+
+func TestMetric_GetSPDXID(tt *testing.T) {
+	var zeroValue string
+	m := &Metric{SPDXID: &zeroValue}
+	m.GetSPDXID()
+	m = &Metric{}
+	m.GetSPDXID()
+	m = nil
+	m.GetSPDXID()
 }
 
 func TestMetric_GetURL(tt *testing.T) {
@@ -10393,6 +10826,13 @@ func TestPackageEvent_GetAction(tt *testing.T) {
 	p.GetAction()
 	p = nil
 	p.GetAction()
+}
+
+func TestPackageEvent_GetInstallation(tt *testing.T) {
+	p := &PackageEvent{}
+	p.GetInstallation()
+	p = nil
+	p.GetInstallation()
 }
 
 func TestPackageEvent_GetOrg(tt *testing.T) {
@@ -12099,6 +12539,20 @@ func TestProtection_GetRestrictions(tt *testing.T) {
 	p.GetRestrictions()
 	p = nil
 	p.GetRestrictions()
+}
+
+func TestProtectionChanges_GetAuthorizedActorNames(tt *testing.T) {
+	p := &ProtectionChanges{}
+	p.GetAuthorizedActorNames()
+	p = nil
+	p.GetAuthorizedActorNames()
+}
+
+func TestProtectionChanges_GetAuthorizedActorsOnly(tt *testing.T) {
+	p := &ProtectionChanges{}
+	p.GetAuthorizedActorsOnly()
+	p = nil
+	p.GetAuthorizedActorsOnly()
 }
 
 func TestProtectionRequest_GetAllowDeletions(tt *testing.T) {
@@ -14641,6 +15095,16 @@ func TestRepositoriesSearchResult_GetTotal(tt *testing.T) {
 	r.GetTotal()
 }
 
+func TestRepository_GetAllowAutoMerge(tt *testing.T) {
+	var zeroValue bool
+	r := &Repository{AllowAutoMerge: &zeroValue}
+	r.GetAllowAutoMerge()
+	r = &Repository{}
+	r.GetAllowAutoMerge()
+	r = nil
+	r.GetAllowAutoMerge()
+}
+
 func TestRepository_GetAllowMergeCommit(tt *testing.T) {
 	var zeroValue bool
 	r := &Repository{AllowMergeCommit: &zeroValue}
@@ -16552,6 +17016,13 @@ func TestRepositoryVulnerabilityAlertEvent_GetAlert(tt *testing.T) {
 	r.GetAlert()
 }
 
+func TestRepositoryVulnerabilityAlertEvent_GetInstallation(tt *testing.T) {
+	r := &RepositoryVulnerabilityAlertEvent{}
+	r.GetInstallation()
+	r = nil
+	r.GetInstallation()
+}
+
 func TestRepositoryVulnerabilityAlertEvent_GetRepository(tt *testing.T) {
 	r := &RepositoryVulnerabilityAlertEvent{}
 	r.GetRepository()
@@ -17046,6 +17517,66 @@ func TestRunnerLabels_GetType(tt *testing.T) {
 	r.GetType()
 }
 
+func TestSCIMUserAttributes_GetActive(tt *testing.T) {
+	var zeroValue bool
+	s := &SCIMUserAttributes{Active: &zeroValue}
+	s.GetActive()
+	s = &SCIMUserAttributes{}
+	s.GetActive()
+	s = nil
+	s.GetActive()
+}
+
+func TestSCIMUserAttributes_GetDisplayName(tt *testing.T) {
+	var zeroValue string
+	s := &SCIMUserAttributes{DisplayName: &zeroValue}
+	s.GetDisplayName()
+	s = &SCIMUserAttributes{}
+	s.GetDisplayName()
+	s = nil
+	s.GetDisplayName()
+}
+
+func TestSCIMUserAttributes_GetExternalID(tt *testing.T) {
+	var zeroValue string
+	s := &SCIMUserAttributes{ExternalID: &zeroValue}
+	s.GetExternalID()
+	s = &SCIMUserAttributes{}
+	s.GetExternalID()
+	s = nil
+	s.GetExternalID()
+}
+
+func TestSCIMUserEmail_GetPrimary(tt *testing.T) {
+	var zeroValue bool
+	s := &SCIMUserEmail{Primary: &zeroValue}
+	s.GetPrimary()
+	s = &SCIMUserEmail{}
+	s.GetPrimary()
+	s = nil
+	s.GetPrimary()
+}
+
+func TestSCIMUserEmail_GetType(tt *testing.T) {
+	var zeroValue string
+	s := &SCIMUserEmail{Type: &zeroValue}
+	s.GetType()
+	s = &SCIMUserEmail{}
+	s.GetType()
+	s = nil
+	s.GetType()
+}
+
+func TestSCIMUserName_GetFormatted(tt *testing.T) {
+	var zeroValue string
+	s := &SCIMUserName{Formatted: &zeroValue}
+	s.GetFormatted()
+	s = &SCIMUserName{}
+	s.GetFormatted()
+	s = nil
+	s.GetFormatted()
+}
+
 func TestSelectedReposList_GetTotalCount(tt *testing.T) {
 	var zeroValue int
 	s := &SelectedReposList{TotalCount: &zeroValue}
@@ -17248,6 +17779,13 @@ func TestStarEvent_GetAction(tt *testing.T) {
 	s.GetAction()
 	s = nil
 	s.GetAction()
+}
+
+func TestStarEvent_GetInstallation(tt *testing.T) {
+	s := &StarEvent{}
+	s.GetInstallation()
+	s = nil
+	s.GetInstallation()
 }
 
 func TestStarEvent_GetOrg(tt *testing.T) {
@@ -18847,6 +19385,16 @@ func TestTreeEntry_GetURL(tt *testing.T) {
 	t.GetURL()
 }
 
+func TestUpdateAttributeForSCIMUserOperations_GetPath(tt *testing.T) {
+	var zeroValue string
+	u := &UpdateAttributeForSCIMUserOperations{Path: &zeroValue}
+	u.GetPath()
+	u = &UpdateAttributeForSCIMUserOperations{}
+	u.GetPath()
+	u = nil
+	u.GetPath()
+}
+
 func TestUpdateCheckRunOptions_GetCompletedAt(tt *testing.T) {
 	var zeroValue Timestamp
 	u := &UpdateCheckRunOptions{CompletedAt: &zeroValue}
@@ -19533,6 +20081,13 @@ func TestUserEvent_GetEnterprise(tt *testing.T) {
 	u.GetEnterprise()
 	u = nil
 	u.GetEnterprise()
+}
+
+func TestUserEvent_GetInstallation(tt *testing.T) {
+	u := &UserEvent{}
+	u.GetInstallation()
+	u = nil
+	u.GetInstallation()
 }
 
 func TestUserEvent_GetSender(tt *testing.T) {
@@ -20266,6 +20821,13 @@ func TestWorkflowBill_GetTotalMS(tt *testing.T) {
 	w.GetTotalMS()
 }
 
+func TestWorkflowDispatchEvent_GetInstallation(tt *testing.T) {
+	w := &WorkflowDispatchEvent{}
+	w.GetInstallation()
+	w = nil
+	w.GetInstallation()
+}
+
 func TestWorkflowDispatchEvent_GetOrg(tt *testing.T) {
 	w := &WorkflowDispatchEvent{}
 	w.GetOrg()
@@ -20458,6 +21020,51 @@ func TestWorkflowJob_GetURL(tt *testing.T) {
 	w.GetURL()
 }
 
+func TestWorkflowJobEvent_GetAction(tt *testing.T) {
+	var zeroValue string
+	w := &WorkflowJobEvent{Action: &zeroValue}
+	w.GetAction()
+	w = &WorkflowJobEvent{}
+	w.GetAction()
+	w = nil
+	w.GetAction()
+}
+
+func TestWorkflowJobEvent_GetInstallation(tt *testing.T) {
+	w := &WorkflowJobEvent{}
+	w.GetInstallation()
+	w = nil
+	w.GetInstallation()
+}
+
+func TestWorkflowJobEvent_GetOrg(tt *testing.T) {
+	w := &WorkflowJobEvent{}
+	w.GetOrg()
+	w = nil
+	w.GetOrg()
+}
+
+func TestWorkflowJobEvent_GetRepo(tt *testing.T) {
+	w := &WorkflowJobEvent{}
+	w.GetRepo()
+	w = nil
+	w.GetRepo()
+}
+
+func TestWorkflowJobEvent_GetSender(tt *testing.T) {
+	w := &WorkflowJobEvent{}
+	w.GetSender()
+	w = nil
+	w.GetSender()
+}
+
+func TestWorkflowJobEvent_GetWorkflowJob(tt *testing.T) {
+	w := &WorkflowJobEvent{}
+	w.GetWorkflowJob()
+	w = nil
+	w.GetWorkflowJob()
+}
+
 func TestWorkflowRun_GetArtifactsURL(tt *testing.T) {
 	var zeroValue string
 	w := &WorkflowRun{ArtifactsURL: &zeroValue}
@@ -20476,6 +21083,26 @@ func TestWorkflowRun_GetCancelURL(tt *testing.T) {
 	w.GetCancelURL()
 	w = nil
 	w.GetCancelURL()
+}
+
+func TestWorkflowRun_GetCheckSuiteID(tt *testing.T) {
+	var zeroValue int64
+	w := &WorkflowRun{CheckSuiteID: &zeroValue}
+	w.GetCheckSuiteID()
+	w = &WorkflowRun{}
+	w.GetCheckSuiteID()
+	w = nil
+	w.GetCheckSuiteID()
+}
+
+func TestWorkflowRun_GetCheckSuiteNodeID(tt *testing.T) {
+	var zeroValue string
+	w := &WorkflowRun{CheckSuiteNodeID: &zeroValue}
+	w.GetCheckSuiteNodeID()
+	w = &WorkflowRun{}
+	w.GetCheckSuiteNodeID()
+	w = nil
+	w.GetCheckSuiteNodeID()
 }
 
 func TestWorkflowRun_GetCheckSuiteURL(tt *testing.T) {
@@ -20738,6 +21365,13 @@ func TestWorkflowRunEvent_GetAction(tt *testing.T) {
 	w.GetAction()
 	w = nil
 	w.GetAction()
+}
+
+func TestWorkflowRunEvent_GetInstallation(tt *testing.T) {
+	w := &WorkflowRunEvent{}
+	w.GetInstallation()
+	w = nil
+	w.GetInstallation()
 }
 
 func TestWorkflowRunEvent_GetOrg(tt *testing.T) {
