@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	qs "github.com/google/go-querystring/query"
 )
@@ -19,8 +20,10 @@ import (
 // Each method takes a query string defining the search keywords and any search qualifiers.
 // For example, when searching issues, the query "gopher is:issue language:go" will search
 // for issues containing the word "gopher" in Go repositories. The method call
-//   opts :=  &github.SearchOptions{Sort: "created", Order: "asc"}
-//   cl.Search.Issues(ctx, "gopher is:issue language:go", opts)
+//
+//	opts :=  &github.SearchOptions{Sort: "created", Order: "asc"}
+//	cl.Search.Issues(ctx, "gopher is:issue language:go", opts)
+//
 // will search for such issues, sorting by creation date in ascending order
 // (i.e., oldest first).
 //
@@ -29,7 +32,7 @@ import (
 // For example, querying with "language:c++" and "leveldb", then query should be
 // "language:c++ leveldb" but not "language:c+++leveldb".
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/search/
+// GitHub API docs: https://docs.github.com/rest/search/
 type SearchService service
 
 // SearchOptions specifies optional parameters to the SearchService methods.
@@ -69,11 +72,17 @@ type RepositoriesSearchResult struct {
 
 // Repositories searches repositories via various criteria.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/search/#search-repositories
+// GitHub API docs: https://docs.github.com/rest/search/search#search-repositories
+//
+//meta:operation GET /search/repositories
 func (s *SearchService) Repositories(ctx context.Context, query string, opts *SearchOptions) (*RepositoriesSearchResult, *Response, error) {
 	result := new(RepositoriesSearchResult)
 	resp, err := s.search(ctx, "repositories", &searchParameters{Query: query}, opts, result)
-	return result, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return result, resp, nil
 }
 
 // TopicsSearchResult represents the result of a topics search.
@@ -97,14 +106,20 @@ type TopicResult struct {
 }
 
 // Topics finds topics via various criteria. Results are sorted by best match.
-// Please see https://help.github.com/en/articles/searching-topics for more
+// Please see https://help.github.com/articles/searching-topics for more
 // information about search qualifiers.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/search/#search-topics
+// GitHub API docs: https://docs.github.com/rest/search/search#search-topics
+//
+//meta:operation GET /search/topics
 func (s *SearchService) Topics(ctx context.Context, query string, opts *SearchOptions) (*TopicsSearchResult, *Response, error) {
 	result := new(TopicsSearchResult)
 	resp, err := s.search(ctx, "topics", &searchParameters{Query: query}, opts, result)
-	return result, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return result, resp, nil
 }
 
 // CommitsSearchResult represents the result of a commits search.
@@ -131,11 +146,17 @@ type CommitResult struct {
 
 // Commits searches commits via various criteria.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/search/#search-commits
+// GitHub API docs: https://docs.github.com/rest/search/search#search-commits
+//
+//meta:operation GET /search/commits
 func (s *SearchService) Commits(ctx context.Context, query string, opts *SearchOptions) (*CommitsSearchResult, *Response, error) {
 	result := new(CommitsSearchResult)
 	resp, err := s.search(ctx, "commits", &searchParameters{Query: query}, opts, result)
-	return result, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return result, resp, nil
 }
 
 // IssuesSearchResult represents the result of an issues search.
@@ -147,11 +168,17 @@ type IssuesSearchResult struct {
 
 // Issues searches issues via various criteria.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/search/#search-issues-and-pull-requests
+// GitHub API docs: https://docs.github.com/rest/search/search#search-issues-and-pull-requests
+//
+//meta:operation GET /search/issues
 func (s *SearchService) Issues(ctx context.Context, query string, opts *SearchOptions) (*IssuesSearchResult, *Response, error) {
 	result := new(IssuesSearchResult)
 	resp, err := s.search(ctx, "issues", &searchParameters{Query: query}, opts, result)
-	return result, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return result, resp, nil
 }
 
 // UsersSearchResult represents the result of a users search.
@@ -163,11 +190,17 @@ type UsersSearchResult struct {
 
 // Users searches users via various criteria.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/search/#search-users
+// GitHub API docs: https://docs.github.com/rest/search/search#search-users
+//
+//meta:operation GET /search/users
 func (s *SearchService) Users(ctx context.Context, query string, opts *SearchOptions) (*UsersSearchResult, *Response, error) {
 	result := new(UsersSearchResult)
 	resp, err := s.search(ctx, "users", &searchParameters{Query: query}, opts, result)
-	return result, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return result, resp, nil
 }
 
 // Match represents a single text match.
@@ -176,7 +209,7 @@ type Match struct {
 	Indices []int   `json:"indices,omitempty"`
 }
 
-// TextMatch represents a text match for a SearchResult
+// TextMatch represents a text match for a SearchResult.
 type TextMatch struct {
 	ObjectURL  *string  `json:"object_url,omitempty"`
 	ObjectType *string  `json:"object_type,omitempty"`
@@ -212,11 +245,17 @@ func (c CodeResult) String() string {
 
 // Code searches code via various criteria.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/search/#search-code
+// GitHub API docs: https://docs.github.com/rest/search/search#search-code
+//
+//meta:operation GET /search/code
 func (s *SearchService) Code(ctx context.Context, query string, opts *SearchOptions) (*CodeSearchResult, *Response, error) {
 	result := new(CodeSearchResult)
 	resp, err := s.search(ctx, "code", &searchParameters{Query: query}, opts, result)
-	return result, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return result, resp, nil
 }
 
 // LabelsSearchResult represents the result of a code search.
@@ -243,11 +282,17 @@ func (l LabelResult) String() string {
 
 // Labels searches labels in the repository with ID repoID via various criteria.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/search/#search-labels
+// GitHub API docs: https://docs.github.com/rest/search/search#search-labels
+//
+//meta:operation GET /search/labels
 func (s *SearchService) Labels(ctx context.Context, repoID int64, query string, opts *SearchOptions) (*LabelsSearchResult, *Response, error) {
 	result := new(LabelsSearchResult)
 	resp, err := s.search(ctx, "labels", &searchParameters{RepositoryID: &repoID, Query: query}, opts, result)
-	return result, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return result, resp, nil
 }
 
 // Helper function that executes search queries against different
@@ -260,6 +305,7 @@ func (s *SearchService) search(ctx context.Context, searchType string, parameter
 	if err != nil {
 		return nil, err
 	}
+
 	if parameters.RepositoryID != nil {
 		params.Set("repository_id", strconv.FormatInt(*parameters.RepositoryID, 10))
 	}
@@ -270,29 +316,32 @@ func (s *SearchService) search(ctx context.Context, searchType string, parameter
 	if err != nil {
 		return nil, err
 	}
-
+	var acceptHeaders []string
 	switch {
 	case searchType == "commits":
 		// Accept header for search commits preview endpoint
 		// TODO: remove custom Accept header when this API fully launches.
-		req.Header.Set("Accept", mediaTypeCommitSearchPreview)
+		acceptHeaders = append(acceptHeaders, mediaTypeCommitSearchPreview)
 	case searchType == "topics":
 		// Accept header for search repositories based on topics preview endpoint
 		// TODO: remove custom Accept header when this API fully launches.
-		req.Header.Set("Accept", mediaTypeTopicsPreview)
+		acceptHeaders = append(acceptHeaders, mediaTypeTopicsPreview)
 	case searchType == "repositories":
 		// Accept header for search repositories based on topics preview endpoint
 		// TODO: remove custom Accept header when this API fully launches.
-		req.Header.Set("Accept", mediaTypeTopicsPreview)
+		acceptHeaders = append(acceptHeaders, mediaTypeTopicsPreview)
 	case searchType == "issues":
 		// Accept header for search issues based on reactions preview endpoint
 		// TODO: remove custom Accept header when this API fully launches.
-		req.Header.Set("Accept", mediaTypeReactionsPreview)
-	case opts != nil && opts.TextMatch:
-		// Accept header defaults to "application/vnd.github.v3+json"
-		// We change it here to fetch back text-match metadata
-		req.Header.Set("Accept", "application/vnd.github.v3.text-match+json")
+		acceptHeaders = append(acceptHeaders, mediaTypeReactionsPreview)
 	}
+	// https://docs.github.com/rest/search#search-repositories
+	// Accept header defaults to "application/vnd.github.v3+json"
+	// We change it here to fetch back text-match metadata
+	if opts != nil && opts.TextMatch {
+		acceptHeaders = append(acceptHeaders, "application/vnd.github.v3.text-match+json")
+	}
+	req.Header.Set("Accept", strings.Join(acceptHeaders, ", "))
 
 	return s.client.Do(ctx, req, result)
 }

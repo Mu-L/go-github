@@ -28,16 +28,26 @@ type WorkflowJob struct {
 	RunID       *int64      `json:"run_id,omitempty"`
 	RunURL      *string     `json:"run_url,omitempty"`
 	NodeID      *string     `json:"node_id,omitempty"`
+	HeadBranch  *string     `json:"head_branch,omitempty"`
 	HeadSHA     *string     `json:"head_sha,omitempty"`
 	URL         *string     `json:"url,omitempty"`
 	HTMLURL     *string     `json:"html_url,omitempty"`
 	Status      *string     `json:"status,omitempty"`
 	Conclusion  *string     `json:"conclusion,omitempty"`
+	CreatedAt   *Timestamp  `json:"created_at,omitempty"`
 	StartedAt   *Timestamp  `json:"started_at,omitempty"`
 	CompletedAt *Timestamp  `json:"completed_at,omitempty"`
 	Name        *string     `json:"name,omitempty"`
 	Steps       []*TaskStep `json:"steps,omitempty"`
 	CheckRunURL *string     `json:"check_run_url,omitempty"`
+	// Labels represents runner labels from the `runs-on:` key from a GitHub Actions workflow.
+	Labels          []string `json:"labels,omitempty"`
+	RunnerID        *int64   `json:"runner_id,omitempty"`
+	RunnerName      *string  `json:"runner_name,omitempty"`
+	RunnerGroupID   *int64   `json:"runner_group_id,omitempty"`
+	RunnerGroupName *string  `json:"runner_group_name,omitempty"`
+	RunAttempt      *int64   `json:"run_attempt,omitempty"`
+	WorkflowName    *string  `json:"workflow_name,omitempty"`
 }
 
 // Jobs represents a slice of repository action workflow job.
@@ -60,7 +70,9 @@ type ListWorkflowJobsOptions struct {
 
 // ListWorkflowJobs lists all jobs for a workflow run.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/actions/#list-jobs-for-a-workflow-run
+// GitHub API docs: https://docs.github.com/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run
+//
+//meta:operation GET /repos/{owner}/{repo}/actions/runs/{run_id}/jobs
 func (s *ActionsService) ListWorkflowJobs(ctx context.Context, owner, repo string, runID int64, opts *ListWorkflowJobsOptions) (*Jobs, *Response, error) {
 	u := fmt.Sprintf("repos/%s/%s/actions/runs/%v/jobs", owner, repo, runID)
 	u, err := addOptions(u, opts)
@@ -82,9 +94,37 @@ func (s *ActionsService) ListWorkflowJobs(ctx context.Context, owner, repo strin
 	return jobs, resp, nil
 }
 
+// ListWorkflowJobsAttempt lists jobs for a workflow run Attempt.
+//
+// GitHub API docs: https://docs.github.com/rest/actions/workflow-jobs#list-jobs-for-a-workflow-run-attempt
+//
+//meta:operation GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs
+func (s *ActionsService) ListWorkflowJobsAttempt(ctx context.Context, owner, repo string, runID, attemptNumber int64, opts *ListOptions) (*Jobs, *Response, error) {
+	u := fmt.Sprintf("repos/%s/%s/actions/runs/%v/attempts/%v/jobs", owner, repo, runID, attemptNumber)
+	u, err := addOptions(u, opts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	req, err := s.client.NewRequest("GET", u, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	jobs := new(Jobs)
+	resp, err := s.client.Do(ctx, req, &jobs)
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return jobs, resp, nil
+}
+
 // GetWorkflowJobByID gets a specific job in a workflow run by ID.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/actions/#get-a-job-for-a-workflow-run
+// GitHub API docs: https://docs.github.com/rest/actions/workflow-jobs#get-a-job-for-a-workflow-run
+//
+//meta:operation GET /repos/{owner}/{repo}/actions/jobs/{job_id}
 func (s *ActionsService) GetWorkflowJobByID(ctx context.Context, owner, repo string, jobID int64) (*WorkflowJob, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/actions/jobs/%v", owner, repo, jobID)
 
@@ -104,46 +144,50 @@ func (s *ActionsService) GetWorkflowJobByID(ctx context.Context, owner, repo str
 
 // GetWorkflowJobLogs gets a redirect URL to download a plain text file of logs for a workflow job.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/actions/#download-job-logs-for-a-workflow-run
-func (s *ActionsService) GetWorkflowJobLogs(ctx context.Context, owner, repo string, jobID int64, followRedirects bool) (*url.URL, *Response, error) {
+// GitHub API docs: https://docs.github.com/rest/actions/workflow-jobs#download-job-logs-for-a-workflow-run
+//
+//meta:operation GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs
+func (s *ActionsService) GetWorkflowJobLogs(ctx context.Context, owner, repo string, jobID int64, maxRedirects int) (*url.URL, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/actions/jobs/%v/logs", owner, repo, jobID)
 
-	resp, err := s.getWorkflowLogsFromURL(ctx, u, followRedirects)
+	if s.client.RateLimitRedirectionalEndpoints {
+		return s.getWorkflowJobLogsWithRateLimit(ctx, u, maxRedirects)
+	}
+
+	return s.getWorkflowJobLogsWithoutRateLimit(ctx, u, maxRedirects)
+}
+
+func (s *ActionsService) getWorkflowJobLogsWithoutRateLimit(ctx context.Context, u string, maxRedirects int) (*url.URL, *Response, error) {
+	resp, err := s.client.roundTripWithOptionalFollowRedirect(ctx, u, maxRedirects)
 	if err != nil {
 		return nil, nil, err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusFound {
-		return nil, newResponse(resp), fmt.Errorf("unexpected status code: %s", resp.Status)
+		return nil, newResponse(resp), fmt.Errorf("unexpected status code: %v", resp.Status)
 	}
+
 	parsedURL, err := url.Parse(resp.Header.Get("Location"))
 	return parsedURL, newResponse(resp), err
 }
 
-func (s *ActionsService) getWorkflowLogsFromURL(ctx context.Context, u string, followRedirects bool) (*http.Response, error) {
+func (s *ActionsService) getWorkflowJobLogsWithRateLimit(ctx context.Context, u string, maxRedirects int) (*url.URL, *Response, error) {
 	req, err := s.client.NewRequest("GET", u, nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	var resp *http.Response
-	// Use http.DefaultTransport if no custom Transport is configured
-	req = withContext(ctx, req)
-	if s.client.client.Transport == nil {
-		resp, err = http.DefaultTransport.RoundTrip(req)
-	} else {
-		resp, err = s.client.client.Transport.RoundTrip(req)
-	}
+	url, resp, err := s.client.bareDoUntilFound(ctx, req, maxRedirects)
 	if err != nil {
-		return nil, err
+		return nil, resp, err
 	}
-	resp.Body.Close()
+	defer resp.Body.Close()
 
-	// If redirect response is returned, follow it
-	if followRedirects && resp.StatusCode == http.StatusMovedPermanently {
-		u = resp.Header.Get("Location")
-		resp, err = s.getWorkflowLogsFromURL(ctx, u, false)
+	// If we didn't receive a valid Location in a 302 response
+	if url == nil {
+		return nil, resp, fmt.Errorf("unexpected status code: %v", resp.Status)
 	}
-	return resp, err
 
+	return url, resp, nil
 }

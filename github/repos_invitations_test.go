@@ -15,8 +15,8 @@ import (
 )
 
 func TestRepositoriesService_ListInvitations(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/invitations", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -31,7 +31,7 @@ func TestRepositoriesService_ListInvitations(t *testing.T) {
 		t.Errorf("Repositories.ListInvitations returned error: %v", err)
 	}
 
-	want := []*RepositoryInvitation{{ID: Int64(1)}, {ID: Int64(2)}}
+	want := []*RepositoryInvitation{{ID: Ptr(int64(1))}, {ID: Ptr(int64(2))}}
 	if !cmp.Equal(got, want) {
 		t.Errorf("Repositories.ListInvitations = %+v, want %+v", got, want)
 	}
@@ -52,8 +52,8 @@ func TestRepositoriesService_ListInvitations(t *testing.T) {
 }
 
 func TestRepositoriesService_DeleteInvitation(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/invitations/2", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -78,8 +78,8 @@ func TestRepositoriesService_DeleteInvitation(t *testing.T) {
 }
 
 func TestRepositoriesService_UpdateInvitation(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/invitations/2", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "PATCH")
@@ -92,7 +92,7 @@ func TestRepositoriesService_UpdateInvitation(t *testing.T) {
 		t.Errorf("Repositories.UpdateInvitation returned error: %v", err)
 	}
 
-	want := &RepositoryInvitation{ID: Int64(1)}
+	want := &RepositoryInvitation{ID: Ptr(int64(1))}
 	if !cmp.Equal(got, want) {
 		t.Errorf("Repositories.UpdateInvitation = %+v, want %+v", got, want)
 	}
@@ -110,4 +110,57 @@ func TestRepositoriesService_UpdateInvitation(t *testing.T) {
 		}
 		return resp, err
 	})
+}
+
+func TestRepositoryInvitation_Marshal(t *testing.T) {
+	t.Parallel()
+	testJSONMarshal(t, &RepositoryInvitation{}, "{}")
+
+	r := &RepositoryInvitation{
+		ID: Ptr(int64(1)),
+		Repo: &Repository{
+			ID:   Ptr(int64(1)),
+			Name: Ptr("n"),
+			URL:  Ptr("u"),
+		},
+		Invitee: &User{
+			ID:   Ptr(int64(1)),
+			Name: Ptr("n"),
+			URL:  Ptr("u"),
+		},
+		Inviter: &User{
+			ID:   Ptr(int64(1)),
+			Name: Ptr("n"),
+			URL:  Ptr("u"),
+		},
+		Permissions: Ptr("p"),
+		CreatedAt:   &Timestamp{referenceTime},
+		URL:         Ptr("u"),
+		HTMLURL:     Ptr("h"),
+	}
+
+	want := `{
+		"id":1,
+		"repository":{
+			"id":1,
+			"name":"n",
+			"url":"u"
+		},
+		"invitee":{
+			"id":1,
+			"name":"n",
+			"url":"u"
+		},
+		"inviter":{
+			"id":1,
+			"name":"n",
+			"url":"u"
+		},
+		"permissions":"p",
+		"created_at":` + referenceTimeStr + `,
+		"url":"u",
+		"html_url":"h"
+	}`
+
+	testJSONMarshal(t, r, want)
 }

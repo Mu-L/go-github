@@ -1,32 +1,106 @@
+run:
+  build-tags:
+    - integration
+  timeout: 10m
 linters:
-  # TODO: fix errors so that all of the linters below pass.
-  # The linters that are commented out, as well as those explicitly disabled,
-  # are currently failing.  We should fix those failures or define exclusion
-  # rules, and then enable those linters.
   enable:
+    - canonicalheader
     - dogsled
     - dupl
+    - gci
+    - gocritic
+    - godot
     - gofmt
     - goimports
-  # - gosec
+    - gosec
     - misspell
     - nakedret
-  # - stylecheck
-  # - unconvert
-  # - unparam
-  # - whitespace
-  disable:
-    - errcheck
-    - gosimple
-    - staticcheck
-    - ineffassign
-    - unused
-issues: 
+    - perfsprint
+    - paralleltest
+    - revive
+    - stylecheck
+    - tparallel
+    - unconvert
+    - unparam
+    - whitespace
+linters-settings:
+  gocritic:
+    disable-all: true
+    enabled-checks:
+      - commentedOutCode
+      - commentFormatting
+  gosec:
+    excludes:
+      # duplicates errcheck
+      - G104
+      # int(os.Stdin.Fd())
+      - G115
+  perfsprint:
+    errorf: true
+    strconcat: false
+  revive:
+    rules:
+      - name: blank-imports
+      - name: bool-literal-in-expr
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: early-return
+      - name: empty-block
+      - name: error-naming
+      - name: error-return
+      - name: error-strings
+      - name: errorf
+      - name: filename-format
+        arguments:
+          - "^[_a-z][_a-z0-9]*.go$"
+      - name: increment-decrement
+      - name: indent-error-flow
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: redefines-builtin-id
+      - name: superfluous-else
+      - name: time-equal
+      - name: time-naming
+      - name: unexported-naming
+      - name: unexported-return
+      - name: unreachable-code
+      - name: var-declaration
+      - name: var-naming
+issues:
+  exclude-use-default: false
   exclude-rules:
-  - linters:
-    - dogsled
-    text:  "declaration has 3 blank identifiers"
-    path: _test\.go
-  - linters:
-    - dupl
-    path: _test\.go
+    - linters:
+        - dupl
+        - unparam
+        - gosec
+        - dogsled
+      path: _test\.go
+
+    # We need to pass nil Context in order to test DoBare erroring on nil ctx.
+    - linters: [ staticcheck ]
+      text: 'SA1012: do not pass a nil Context'
+      path: _test\.go
+
+    # We need to use sha1 for validating signatures
+    - linters: [ gosec ]
+      text: 'G505: Blocklisted import crypto/sha1: weak cryptographic primitive'
+
+    # This is adapted from golangci-lint's default exclusions. It disables linting for error checks on
+    # os.RemoveAll, fmt.Fprint*, fmt.Scanf, and any function ending in "Close".
+    - linters: [ errcheck ]
+      text: Error return value of .(.*Close|fmt\.Fprint.*|fmt\.Scanf|os\.Remove(All)?). is not checked
+
+    # We don't care about file inclusion via variable in examples or internal tools.
+    - linters: [ gosec ]
+      text: 'G304: Potential file inclusion via variable'
+      path: '^(example|tools)\/'
+
+    # We don't run parallel integration tests
+    - linters: [ paralleltest, tparallel ]
+      path: '^test/integration'
+
+    # Because fmt.Sprint(reset.Unix())) is more readable than strconv.FormatInt(reset.Unix(), 10).
+    - linters: [ perfsprint]
+      text: 'fmt.Sprint.* can be replaced with faster strconv.FormatInt'

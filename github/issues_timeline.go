@@ -9,13 +9,12 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 )
 
 // Timeline represents an event that occurred around an Issue or Pull Request.
 //
 // It is similar to an IssueEvent but may contain more information.
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/issues/timeline/
+// GitHub API docs: https://docs.github.com/developers/webhooks-and-events/events/issue-event-types
 type Timeline struct {
 	ID        *int64  `json:"id,omitempty"`
 	URL       *string `json:"url,omitempty"`
@@ -23,6 +22,20 @@ type Timeline struct {
 
 	// The User object that generated the event.
 	Actor *User `json:"actor,omitempty"`
+
+	// The person who commented on the issue.
+	User *User `json:"user,omitempty"`
+
+	// The person who authored the commit.
+	Author *CommitAuthor `json:"author,omitempty"`
+	// The person who committed the commit on behalf of the author.
+	Committer *CommitAuthor `json:"committer,omitempty"`
+	// The SHA of the commit in the pull request.
+	SHA *string `json:"sha,omitempty"`
+	// The commit message.
+	Message *string `json:"message,omitempty"`
+	// A list of parent commits.
+	Parents []*Commit `json:"parents,omitempty"`
 
 	// Event identifies the actual type of Event that occurred. Possible values
 	// are:
@@ -84,6 +97,14 @@ type Timeline struct {
 	//     reviewed
 	//       The pull request was reviewed.
 	//
+	//     review_requested
+	//       The actor requested a review from a user or team.
+	//       Reviewer and Requester/RequestedTeam will be populated.
+	//
+	//     review_request_removed
+	//       The actor removed a review request from a user or team.
+	//       Reviewer and Requester/RequestedTeam will be populated.
+	//
 	//     subscribed
 	//       The actor subscribed to receive notifications for an issue.
 	//
@@ -104,13 +125,15 @@ type Timeline struct {
 	// The string SHA of a commit that referenced this Issue or Pull Request.
 	CommitID *string `json:"commit_id,omitempty"`
 	// The timestamp indicating when the event occurred.
-	CreatedAt *time.Time `json:"created_at,omitempty"`
+	CreatedAt *Timestamp `json:"created_at,omitempty"`
 	// The Label object including `name` and `color` attributes. Only provided for
 	// 'labeled' and 'unlabeled' events.
 	Label *Label `json:"label,omitempty"`
 	// The User object which was assigned to (or unassigned from) this Issue or
 	// Pull Request. Only provided for 'assigned' and 'unassigned' events.
 	Assignee *User `json:"assignee,omitempty"`
+	Assigner *User `json:"assigner,omitempty"`
+
 	// The Milestone object including a 'title' attribute.
 	// Only provided for 'milestoned' and 'demilestoned' events.
 	Milestone *Milestone `json:"milestone,omitempty"`
@@ -119,12 +142,24 @@ type Timeline struct {
 	Source *Source `json:"source,omitempty"`
 	// An object containing rename details including 'from' and 'to' attributes.
 	// Only provided for 'renamed' events.
-	Rename      *Rename      `json:"rename,omitempty"`
-	ProjectCard *ProjectCard `json:"project_card,omitempty"`
+	Rename *Rename `json:"rename,omitempty"`
 	// The state of a submitted review. Can be one of: 'commented',
 	// 'changes_requested' or 'approved'.
 	// Only provided for 'reviewed' events.
 	State *string `json:"state,omitempty"`
+
+	// The person requested to review the pull request.
+	Reviewer *User `json:"requested_reviewer,omitempty"`
+	// RequestedTeam contains the team requested to review the pull request.
+	RequestedTeam *Team `json:"requested_team,omitempty"`
+	// The person who requested a review.
+	Requester *User `json:"review_requester,omitempty"`
+
+	// The review summary text.
+	Body        *string    `json:"body,omitempty"`
+	SubmittedAt *Timestamp `json:"submitted_at,omitempty"`
+
+	PerformedViaGithubApp *App `json:"performed_via_github_app,omitempty"`
 }
 
 // Source represents a reference's source.
@@ -138,7 +173,9 @@ type Source struct {
 
 // ListIssueTimeline lists events for the specified issue.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/issues/#list-timeline-events-for-an-issue
+// GitHub API docs: https://docs.github.com/rest/issues/timeline#list-timeline-events-for-an-issue
+//
+//meta:operation GET /repos/{owner}/{repo}/issues/{issue_number}/timeline
 func (s *IssuesService) ListIssueTimeline(ctx context.Context, owner, repo string, number int, opts *ListOptions) ([]*Timeline, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/issues/%v/timeline", owner, repo, number)
 	u, err := addOptions(u, opts)
@@ -157,5 +194,9 @@ func (s *IssuesService) ListIssueTimeline(ctx context.Context, owner, repo strin
 
 	var events []*Timeline
 	resp, err := s.client.Do(ctx, req, &events)
-	return events, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return events, resp, nil
 }

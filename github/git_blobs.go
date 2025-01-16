@@ -23,7 +23,9 @@ type Blob struct {
 
 // GetBlob fetches a blob from a repo given a SHA.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#get-a-blob
+// GitHub API docs: https://docs.github.com/rest/git/blobs#get-a-blob
+//
+//meta:operation GET /repos/{owner}/{repo}/git/blobs/{file_sha}
 func (s *GitService) GetBlob(ctx context.Context, owner string, repo string, sha string) (*Blob, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/git/blobs/%v", owner, repo, sha)
 	req, err := s.client.NewRequest("GET", u, nil)
@@ -33,29 +35,42 @@ func (s *GitService) GetBlob(ctx context.Context, owner string, repo string, sha
 
 	blob := new(Blob)
 	resp, err := s.client.Do(ctx, req, blob)
-	return blob, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return blob, resp, nil
 }
 
 // GetBlobRaw fetches a blob's contents from a repo.
 // Unlike GetBlob, it returns the raw bytes rather than the base64-encoded data.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#get-a-blob
+// GitHub API docs: https://docs.github.com/rest/git/blobs#get-a-blob
+//
+//meta:operation GET /repos/{owner}/{repo}/git/blobs/{file_sha}
 func (s *GitService) GetBlobRaw(ctx context.Context, owner, repo, sha string) ([]byte, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/git/blobs/%v", owner, repo, sha)
 	req, err := s.client.NewRequest("GET", u, nil)
 	if err != nil {
 		return nil, nil, err
 	}
+
 	req.Header.Set("Accept", "application/vnd.github.v3.raw")
 
 	var buf bytes.Buffer
 	resp, err := s.client.Do(ctx, req, &buf)
-	return buf.Bytes(), resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return buf.Bytes(), resp, nil
 }
 
 // CreateBlob creates a blob object.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#create-a-blob
+// GitHub API docs: https://docs.github.com/rest/git/blobs#create-a-blob
+//
+//meta:operation POST /repos/{owner}/{repo}/git/blobs
 func (s *GitService) CreateBlob(ctx context.Context, owner string, repo string, blob *Blob) (*Blob, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/git/blobs", owner, repo)
 	req, err := s.client.NewRequest("POST", u, blob)
@@ -65,5 +80,9 @@ func (s *GitService) CreateBlob(ctx context.Context, owner string, repo string, 
 
 	t := new(Blob)
 	resp, err := s.client.Do(ctx, req, t)
-	return t, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return t, resp, nil
 }

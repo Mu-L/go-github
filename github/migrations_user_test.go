@@ -16,15 +16,15 @@ import (
 )
 
 func TestMigrationService_StartUserMigration(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/migrations", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
 		testHeader(t, r, "Accept", mediaTypeMigrationsPreview)
 
 		w.WriteHeader(http.StatusCreated)
-		w.Write(userMigrationJSON)
+		assertWrite(t, w, userMigrationJSON)
 	})
 
 	opt := &UserMigrationOptions{
@@ -54,19 +54,19 @@ func TestMigrationService_StartUserMigration(t *testing.T) {
 }
 
 func TestMigrationService_ListUserMigrations(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/migrations", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		testHeader(t, r, "Accept", mediaTypeMigrationsPreview)
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(fmt.Sprintf("[%s]", userMigrationJSON)))
+		assertWrite(t, w, []byte(fmt.Sprintf("[%s]", userMigrationJSON)))
 	})
 
 	ctx := context.Background()
-	got, _, err := client.Migrations.ListUserMigrations(ctx)
+	got, _, err := client.Migrations.ListUserMigrations(ctx, &ListOptions{Page: 1, PerPage: 2})
 	if err != nil {
 		t.Errorf("ListUserMigrations returned error %v", err)
 	}
@@ -78,7 +78,7 @@ func TestMigrationService_ListUserMigrations(t *testing.T) {
 
 	const methodName = "ListUserMigrations"
 	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
-		got, resp, err := client.Migrations.ListUserMigrations(ctx)
+		got, resp, err := client.Migrations.ListUserMigrations(ctx, &ListOptions{Page: 1, PerPage: 2})
 		if got != nil {
 			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
 		}
@@ -87,15 +87,15 @@ func TestMigrationService_ListUserMigrations(t *testing.T) {
 }
 
 func TestMigrationService_UserMigrationStatus(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/migrations/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		testHeader(t, r, "Accept", mediaTypeMigrationsPreview)
 
 		w.WriteHeader(http.StatusOK)
-		w.Write(userMigrationJSON)
+		assertWrite(t, w, userMigrationJSON)
 	})
 
 	ctx := context.Background()
@@ -120,8 +120,8 @@ func TestMigrationService_UserMigrationStatus(t *testing.T) {
 }
 
 func TestMigrationService_UserMigrationArchiveURL(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/migrations/1/archive", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -149,8 +149,8 @@ func TestMigrationService_UserMigrationArchiveURL(t *testing.T) {
 }
 
 func TestMigrationService_DeleteUserMigration(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/migrations/1/archive", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -181,8 +181,8 @@ func TestMigrationService_DeleteUserMigration(t *testing.T) {
 }
 
 func TestMigrationService_UnlockUserRepo(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/migrations/1/repos/r/lock", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -232,37 +232,38 @@ var userMigrationJSON = []byte(`{
 }`)
 
 var wantUserMigration = &UserMigration{
-	ID:                 Int64(79),
-	GUID:               String("0b989ba4-242f-11e5-81e1-c7b6966d2516"),
-	State:              String("pending"),
-	LockRepositories:   Bool(true),
-	ExcludeAttachments: Bool(false),
-	URL:                String("https://api.github.com/orgs/octo-org/migrations/79"),
-	CreatedAt:          String("2015-07-06T15:33:38-07:00"),
-	UpdatedAt:          String("2015-07-06T15:33:38-07:00"),
+	ID:                 Ptr(int64(79)),
+	GUID:               Ptr("0b989ba4-242f-11e5-81e1-c7b6966d2516"),
+	State:              Ptr("pending"),
+	LockRepositories:   Ptr(true),
+	ExcludeAttachments: Ptr(false),
+	URL:                Ptr("https://api.github.com/orgs/octo-org/migrations/79"),
+	CreatedAt:          Ptr("2015-07-06T15:33:38-07:00"),
+	UpdatedAt:          Ptr("2015-07-06T15:33:38-07:00"),
 	Repositories: []*Repository{
 		{
-			ID:          Int64(1296269),
-			Name:        String("Hello-World"),
-			FullName:    String("octocat/Hello-World"),
-			Description: String("This your first repo!"),
+			ID:          Ptr(int64(1296269)),
+			Name:        Ptr("Hello-World"),
+			FullName:    Ptr("octocat/Hello-World"),
+			Description: Ptr("This your first repo!"),
 		},
 	},
 }
 
 func TestUserMigration_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &UserMigration{}, "{}")
 
 	u := &UserMigration{
-		ID:                 Int64(1),
-		GUID:               String("guid"),
-		State:              String("state"),
-		LockRepositories:   Bool(false),
-		ExcludeAttachments: Bool(false),
-		URL:                String("url"),
-		CreatedAt:          String("ca"),
-		UpdatedAt:          String("ua"),
-		Repositories:       []*Repository{{ID: Int64(1)}},
+		ID:                 Ptr(int64(1)),
+		GUID:               Ptr("guid"),
+		State:              Ptr("state"),
+		LockRepositories:   Ptr(false),
+		ExcludeAttachments: Ptr(false),
+		URL:                Ptr("url"),
+		CreatedAt:          Ptr("ca"),
+		UpdatedAt:          Ptr("ua"),
+		Repositories:       []*Repository{{ID: Ptr(int64(1))}},
 	}
 
 	want := `{
@@ -285,12 +286,13 @@ func TestUserMigration_Marshal(t *testing.T) {
 }
 
 func TestStartUserMigration_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &startUserMigration{}, "{}")
 
 	u := &startUserMigration{
 		Repositories:       []string{"r"},
-		LockRepositories:   Bool(false),
-		ExcludeAttachments: Bool(false),
+		LockRepositories:   Ptr(false),
+		ExcludeAttachments: Ptr(false),
 	}
 
 	want := `{
