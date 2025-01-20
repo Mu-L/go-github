@@ -16,8 +16,8 @@ import (
 )
 
 func TestUsersService_ListKeys_authenticatedUser(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/keys", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -32,7 +32,7 @@ func TestUsersService_ListKeys_authenticatedUser(t *testing.T) {
 		t.Errorf("Users.ListKeys returned error: %v", err)
 	}
 
-	want := []*Key{{ID: Int64(1)}}
+	want := []*Key{{ID: Ptr(int64(1))}}
 	if !cmp.Equal(keys, want) {
 		t.Errorf("Users.ListKeys returned %+v, want %+v", keys, want)
 	}
@@ -53,8 +53,8 @@ func TestUsersService_ListKeys_authenticatedUser(t *testing.T) {
 }
 
 func TestUsersService_ListKeys_specifiedUser(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/users/u/keys", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -67,15 +67,15 @@ func TestUsersService_ListKeys_specifiedUser(t *testing.T) {
 		t.Errorf("Users.ListKeys returned error: %v", err)
 	}
 
-	want := []*Key{{ID: Int64(1)}}
+	want := []*Key{{ID: Ptr(int64(1))}}
 	if !cmp.Equal(keys, want) {
 		t.Errorf("Users.ListKeys returned %+v, want %+v", keys, want)
 	}
 }
 
 func TestUsersService_ListKeys_invalidUser(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Users.ListKeys(ctx, "%", nil)
@@ -83,8 +83,8 @@ func TestUsersService_ListKeys_invalidUser(t *testing.T) {
 }
 
 func TestUsersService_GetKey(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/keys/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -97,7 +97,7 @@ func TestUsersService_GetKey(t *testing.T) {
 		t.Errorf("Users.GetKey returned error: %v", err)
 	}
 
-	want := &Key{ID: Int64(1)}
+	want := &Key{ID: Ptr(int64(1))}
 	if !cmp.Equal(key, want) {
 		t.Errorf("Users.GetKey returned %+v, want %+v", key, want)
 	}
@@ -118,14 +118,14 @@ func TestUsersService_GetKey(t *testing.T) {
 }
 
 func TestUsersService_CreateKey(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
-	input := &Key{Key: String("k"), Title: String("t")}
+	input := &Key{Key: Ptr("k"), Title: Ptr("t")}
 
 	mux.HandleFunc("/user/keys", func(w http.ResponseWriter, r *http.Request) {
 		v := new(Key)
-		json.NewDecoder(r.Body).Decode(v)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
 
 		testMethod(t, r, "POST")
 		if !cmp.Equal(v, input) {
@@ -138,12 +138,12 @@ func TestUsersService_CreateKey(t *testing.T) {
 	ctx := context.Background()
 	key, _, err := client.Users.CreateKey(ctx, input)
 	if err != nil {
-		t.Errorf("Users.GetKey returned error: %v", err)
+		t.Errorf("Users.CreateKey returned error: %v", err)
 	}
 
-	want := &Key{ID: Int64(1)}
+	want := &Key{ID: Ptr(int64(1))}
 	if !cmp.Equal(key, want) {
-		t.Errorf("Users.GetKey returned %+v, want %+v", key, want)
+		t.Errorf("Users.CreateKey returned %+v, want %+v", key, want)
 	}
 
 	const methodName = "CreateKey"
@@ -157,8 +157,8 @@ func TestUsersService_CreateKey(t *testing.T) {
 }
 
 func TestUsersService_DeleteKey(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/keys/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -179,4 +179,31 @@ func TestUsersService_DeleteKey(t *testing.T) {
 	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
 		return client.Users.DeleteKey(ctx, 1)
 	})
+}
+
+func TestKey_Marshal(t *testing.T) {
+	t.Parallel()
+	testJSONMarshal(t, &Key{}, "{}")
+
+	u := &Key{
+		ID:        Ptr(int64(1)),
+		Key:       Ptr("abc"),
+		URL:       Ptr("url"),
+		Title:     Ptr("title"),
+		ReadOnly:  Ptr(true),
+		Verified:  Ptr(true),
+		CreatedAt: &Timestamp{referenceTime},
+	}
+
+	want := `{
+		"id": 1,
+		"key": "abc",
+		"url": "url",
+		"title": "title",
+		"read_only": true,
+		"verified": true,
+		"created_at": ` + referenceTimeStr + `
+	}`
+
+	testJSONMarshal(t, u, want)
 }

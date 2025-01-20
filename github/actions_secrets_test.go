@@ -17,6 +17,7 @@ import (
 )
 
 func TestPublicKey_UnmarshalJSON(t *testing.T) {
+	t.Parallel()
 	var testCases = map[string]struct {
 		data          []byte
 		wantPublicKey PublicKey
@@ -34,17 +35,17 @@ func TestPublicKey_UnmarshalJSON(t *testing.T) {
 		},
 		"Numeric KeyID": {
 			data:          []byte(`{"key_id":1234,"key":"2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234"}`),
-			wantPublicKey: PublicKey{KeyID: String("1234"), Key: String("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")},
+			wantPublicKey: PublicKey{KeyID: Ptr("1234"), Key: Ptr("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")},
 			wantErr:       false,
 		},
 		"String KeyID": {
 			data:          []byte(`{"key_id":"1234","key":"2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234"}`),
-			wantPublicKey: PublicKey{KeyID: String("1234"), Key: String("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")},
+			wantPublicKey: PublicKey{KeyID: Ptr("1234"), Key: Ptr("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")},
 			wantErr:       false,
 		},
 		"Invalid KeyID": {
 			data:          []byte(`{"key_id":["1234"],"key":"2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234"}`),
-			wantPublicKey: PublicKey{KeyID: nil, Key: String("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")},
+			wantPublicKey: PublicKey{KeyID: nil, Key: Ptr("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")},
 			wantErr:       true,
 		},
 		"Invalid Key": {
@@ -64,12 +65,12 @@ func TestPublicKey_UnmarshalJSON(t *testing.T) {
 		},
 		"Missing Key": {
 			data:          []byte(`{"key_id":"1234"}`),
-			wantPublicKey: PublicKey{KeyID: String("1234")},
+			wantPublicKey: PublicKey{KeyID: Ptr("1234")},
 			wantErr:       false,
 		},
 		"Missing KeyID": {
 			data:          []byte(`{"key":"2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234"}`),
-			wantPublicKey: PublicKey{Key: String("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")},
+			wantPublicKey: PublicKey{Key: Ptr("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")},
 			wantErr:       false,
 		},
 	}
@@ -77,6 +78,7 @@ func TestPublicKey_UnmarshalJSON(t *testing.T) {
 	for name, tt := range testCases {
 		tt := tt
 		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 			pk := PublicKey{}
 			err := json.Unmarshal(tt.data, &pk)
 			if err == nil && tt.wantErr {
@@ -93,8 +95,8 @@ func TestPublicKey_UnmarshalJSON(t *testing.T) {
 }
 
 func TestActionsService_GetRepoPublicKey(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/secrets/public-key", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -107,7 +109,7 @@ func TestActionsService_GetRepoPublicKey(t *testing.T) {
 		t.Errorf("Actions.GetRepoPublicKey returned error: %v", err)
 	}
 
-	want := &PublicKey{KeyID: String("1234"), Key: String("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
+	want := &PublicKey{KeyID: Ptr("1234"), Key: Ptr("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
 	if !cmp.Equal(key, want) {
 		t.Errorf("Actions.GetRepoPublicKey returned %+v, want %+v", key, want)
 	}
@@ -128,8 +130,8 @@ func TestActionsService_GetRepoPublicKey(t *testing.T) {
 }
 
 func TestActionsService_GetRepoPublicKeyNumeric(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/secrets/public-key", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -142,7 +144,7 @@ func TestActionsService_GetRepoPublicKeyNumeric(t *testing.T) {
 		t.Errorf("Actions.GetRepoPublicKey returned error: %v", err)
 	}
 
-	want := &PublicKey{KeyID: String("1234"), Key: String("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
+	want := &PublicKey{KeyID: Ptr("1234"), Key: Ptr("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
 	if !cmp.Equal(key, want) {
 		t.Errorf("Actions.GetRepoPublicKey returned %+v, want %+v", key, want)
 	}
@@ -163,8 +165,8 @@ func TestActionsService_GetRepoPublicKeyNumeric(t *testing.T) {
 }
 
 func TestActionsService_ListRepoSecrets(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/secrets", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -205,9 +207,52 @@ func TestActionsService_ListRepoSecrets(t *testing.T) {
 	})
 }
 
+func TestActionsService_ListRepoOrgSecrets(t *testing.T) {
+	t.Parallel()
+	client, mux, _ := setup(t)
+
+	mux.HandleFunc("/repos/o/r/actions/organization-secrets", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		testFormValues(t, r, values{"per_page": "2", "page": "2"})
+		fmt.Fprint(w, `{"total_count":4,"secrets":[{"name":"A","created_at":"2019-01-02T15:04:05Z","updated_at":"2020-01-02T15:04:05Z"},{"name":"B","created_at":"2019-01-02T15:04:05Z","updated_at":"2020-01-02T15:04:05Z"}]}`)
+	})
+
+	opts := &ListOptions{Page: 2, PerPage: 2}
+	ctx := context.Background()
+	secrets, _, err := client.Actions.ListRepoOrgSecrets(ctx, "o", "r", opts)
+	if err != nil {
+		t.Errorf("Actions.ListRepoOrgSecrets returned error: %v", err)
+	}
+
+	want := &Secrets{
+		TotalCount: 4,
+		Secrets: []*Secret{
+			{Name: "A", CreatedAt: Timestamp{time.Date(2019, time.January, 02, 15, 04, 05, 0, time.UTC)}, UpdatedAt: Timestamp{time.Date(2020, time.January, 02, 15, 04, 05, 0, time.UTC)}},
+			{Name: "B", CreatedAt: Timestamp{time.Date(2019, time.January, 02, 15, 04, 05, 0, time.UTC)}, UpdatedAt: Timestamp{time.Date(2020, time.January, 02, 15, 04, 05, 0, time.UTC)}},
+		},
+	}
+	if !cmp.Equal(secrets, want) {
+		t.Errorf("Actions.ListRepoOrgSecrets returned %+v, want %+v", secrets, want)
+	}
+
+	const methodName = "ListRepoOrgSecrets"
+	testBadOptions(t, methodName, func() (err error) {
+		_, _, err = client.Actions.ListRepoOrgSecrets(ctx, "\n", "\n", opts)
+		return err
+	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Actions.ListRepoOrgSecrets(ctx, "o", "r", opts)
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
+}
+
 func TestActionsService_GetRepoSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/secrets/NAME", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -245,8 +290,8 @@ func TestActionsService_GetRepoSecret(t *testing.T) {
 }
 
 func TestActionsService_CreateOrUpdateRepoSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/secrets/NAME", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "PUT")
@@ -278,8 +323,8 @@ func TestActionsService_CreateOrUpdateRepoSecret(t *testing.T) {
 }
 
 func TestActionsService_DeleteRepoSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/secrets/NAME", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -303,8 +348,8 @@ func TestActionsService_DeleteRepoSecret(t *testing.T) {
 }
 
 func TestActionsService_GetOrgPublicKey(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/secrets/public-key", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -317,7 +362,7 @@ func TestActionsService_GetOrgPublicKey(t *testing.T) {
 		t.Errorf("Actions.GetOrgPublicKey returned error: %v", err)
 	}
 
-	want := &PublicKey{KeyID: String("012345678"), Key: String("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
+	want := &PublicKey{KeyID: Ptr("012345678"), Key: Ptr("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
 	if !cmp.Equal(key, want) {
 		t.Errorf("Actions.GetOrgPublicKey returned %+v, want %+v", key, want)
 	}
@@ -338,8 +383,8 @@ func TestActionsService_GetOrgPublicKey(t *testing.T) {
 }
 
 func TestActionsService_ListOrgSecrets(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/secrets", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -382,8 +427,8 @@ func TestActionsService_ListOrgSecrets(t *testing.T) {
 }
 
 func TestActionsService_GetOrgSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/secrets/NAME", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -423,8 +468,8 @@ func TestActionsService_GetOrgSecret(t *testing.T) {
 }
 
 func TestActionsService_CreateOrUpdateOrgSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/secrets/NAME", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "PUT")
@@ -458,8 +503,8 @@ func TestActionsService_CreateOrUpdateOrgSecret(t *testing.T) {
 }
 
 func TestActionsService_ListSelectedReposForOrgSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/secrets/NAME/repositories", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -474,9 +519,9 @@ func TestActionsService_ListSelectedReposForOrgSecret(t *testing.T) {
 	}
 
 	want := &SelectedReposList{
-		TotalCount: Int(1),
+		TotalCount: Ptr(1),
 		Repositories: []*Repository{
-			{ID: Int64(1)},
+			{ID: Ptr(int64(1))},
 		},
 	}
 	if !cmp.Equal(repos, want) {
@@ -499,8 +544,8 @@ func TestActionsService_ListSelectedReposForOrgSecret(t *testing.T) {
 }
 
 func TestActionsService_SetSelectedReposForOrgSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/secrets/NAME/repositories", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "PUT")
@@ -526,14 +571,14 @@ func TestActionsService_SetSelectedReposForOrgSecret(t *testing.T) {
 }
 
 func TestActionsService_AddSelectedRepoToOrgSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/secrets/NAME/repositories/1234", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "PUT")
 	})
 
-	repo := &Repository{ID: Int64(1234)}
+	repo := &Repository{ID: Ptr(int64(1234))}
 	ctx := context.Background()
 	_, err := client.Actions.AddSelectedRepoToOrgSecret(ctx, "o", "NAME", repo)
 	if err != nil {
@@ -552,14 +597,14 @@ func TestActionsService_AddSelectedRepoToOrgSecret(t *testing.T) {
 }
 
 func TestActionsService_RemoveSelectedRepoFromOrgSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/secrets/NAME/repositories/1234", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
 	})
 
-	repo := &Repository{ID: Int64(1234)}
+	repo := &Repository{ID: Ptr(int64(1234))}
 	ctx := context.Background()
 	_, err := client.Actions.RemoveSelectedRepoFromOrgSecret(ctx, "o", "NAME", repo)
 	if err != nil {
@@ -578,8 +623,8 @@ func TestActionsService_RemoveSelectedRepoFromOrgSecret(t *testing.T) {
 }
 
 func TestActionsService_DeleteOrgSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/secrets/NAME", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -603,8 +648,9 @@ func TestActionsService_DeleteOrgSecret(t *testing.T) {
 }
 
 func TestActionsService_GetEnvPublicKey(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
+
 	mux.HandleFunc("/repositories/1/environments/e/secrets/public-key", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		fmt.Fprint(w, `{"key_id":"1234","key":"2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234"}`)
@@ -616,7 +662,7 @@ func TestActionsService_GetEnvPublicKey(t *testing.T) {
 		t.Errorf("Actions.GetEnvPublicKey returned error: %v", err)
 	}
 
-	want := &PublicKey{KeyID: String("1234"), Key: String("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
+	want := &PublicKey{KeyID: Ptr("1234"), Key: Ptr("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
 	if !cmp.Equal(key, want) {
 		t.Errorf("Actions.GetEnvPublicKey returned %+v, want %+v", key, want)
 	}
@@ -637,8 +683,8 @@ func TestActionsService_GetEnvPublicKey(t *testing.T) {
 }
 
 func TestActionsService_GetEnvPublicKeyNumeric(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repositories/1/environments/e/secrets/public-key", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -651,7 +697,7 @@ func TestActionsService_GetEnvPublicKeyNumeric(t *testing.T) {
 		t.Errorf("Actions.GetEnvPublicKey returned error: %v", err)
 	}
 
-	want := &PublicKey{KeyID: String("1234"), Key: String("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
+	want := &PublicKey{KeyID: Ptr("1234"), Key: Ptr("2Sg8iYjAxxmI2LvUXpJjkYrMxURPc8r+dB7TJyvv1234")}
 	if !cmp.Equal(key, want) {
 		t.Errorf("Actions.GetEnvPublicKey returned %+v, want %+v", key, want)
 	}
@@ -672,8 +718,8 @@ func TestActionsService_GetEnvPublicKeyNumeric(t *testing.T) {
 }
 
 func TestActionsService_ListEnvSecrets(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repositories/1/environments/e/secrets", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -715,8 +761,8 @@ func TestActionsService_ListEnvSecrets(t *testing.T) {
 }
 
 func TestActionsService_GetEnvSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repositories/1/environments/e/secrets/secret", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -754,8 +800,8 @@ func TestActionsService_GetEnvSecret(t *testing.T) {
 }
 
 func TestActionsService_CreateOrUpdateEnvSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repositories/1/environments/e/secrets/secret", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "PUT")
@@ -787,8 +833,8 @@ func TestActionsService_CreateOrUpdateEnvSecret(t *testing.T) {
 }
 
 func TestActionsService_DeleteEnvSecret(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repositories/1/environments/e/secrets/secret", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -812,11 +858,12 @@ func TestActionsService_DeleteEnvSecret(t *testing.T) {
 }
 
 func TestPublicKey_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &PublicKey{}, "{}")
 
 	u := &PublicKey{
-		KeyID: String("kid"),
-		Key:   String("k"),
+		KeyID: Ptr("kid"),
+		Key:   Ptr("k"),
 	}
 
 	want := `{
@@ -828,6 +875,7 @@ func TestPublicKey_Marshal(t *testing.T) {
 }
 
 func TestSecret_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &Secret{}, "{}")
 
 	u := &Secret{
@@ -850,6 +898,7 @@ func TestSecret_Marshal(t *testing.T) {
 }
 
 func TestSecrets_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &Secrets{}, "{}")
 
 	u := &Secrets{
@@ -881,6 +930,7 @@ func TestSecrets_Marshal(t *testing.T) {
 }
 
 func TestEncryptedSecret_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &EncryptedSecret{}, "{}")
 
 	u := &EncryptedSecret{
@@ -902,15 +952,16 @@ func TestEncryptedSecret_Marshal(t *testing.T) {
 }
 
 func TestSelectedReposList_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &SelectedReposList{}, "{}")
 
 	u := &SelectedReposList{
-		TotalCount: Int(1),
+		TotalCount: Ptr(1),
 		Repositories: []*Repository{
 			{
-				ID:   Int64(1),
-				URL:  String("u"),
-				Name: String("n"),
+				ID:   Ptr(int64(1)),
+				URL:  Ptr("u"),
+				Name: Ptr("n"),
 			},
 		},
 	}

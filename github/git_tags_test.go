@@ -16,8 +16,8 @@ import (
 )
 
 func TestGitService_GetTag(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/git/tags/s", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -30,7 +30,7 @@ func TestGitService_GetTag(t *testing.T) {
 		t.Errorf("Git.GetTag returned error: %v", err)
 	}
 
-	want := &Tag{Tag: String("t")}
+	want := &Tag{Tag: Ptr("t")}
 	if !cmp.Equal(tag, want) {
 		t.Errorf("Git.GetTag returned %+v, want %+v", tag, want)
 	}
@@ -40,17 +40,25 @@ func TestGitService_GetTag(t *testing.T) {
 		_, _, err = client.Git.GetTag(ctx, "\n", "\n", "\n")
 		return err
 	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Git.GetTag(ctx, "o", "r", "s")
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
 }
 
 func TestGitService_CreateTag(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
-	input := &createTagRequest{Tag: String("t"), Object: String("s")}
+	input := &createTagRequest{Tag: Ptr("t"), Object: Ptr("s")}
 
 	mux.HandleFunc("/repos/o/r/git/tags", func(w http.ResponseWriter, r *http.Request) {
 		v := new(createTagRequest)
-		json.NewDecoder(r.Body).Decode(v)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
 
 		testMethod(t, r, "POST")
 		if !cmp.Equal(v, input) {
@@ -61,55 +69,62 @@ func TestGitService_CreateTag(t *testing.T) {
 	})
 
 	ctx := context.Background()
-	tag, _, err := client.Git.CreateTag(ctx, "o", "r", &Tag{
+	inputTag := &Tag{
 		Tag:    input.Tag,
 		Object: &GitObject{SHA: input.Object},
-	})
+	}
+	tag, _, err := client.Git.CreateTag(ctx, "o", "r", inputTag)
 	if err != nil {
 		t.Errorf("Git.CreateTag returned error: %v", err)
 	}
 
-	want := &Tag{Tag: String("t")}
+	want := &Tag{Tag: Ptr("t")}
 	if !cmp.Equal(tag, want) {
 		t.Errorf("Git.GetTag returned %+v, want %+v", tag, want)
 	}
 
 	const methodName = "CreateTag"
 	testBadOptions(t, methodName, func() (err error) {
-		_, _, err = client.Git.CreateTag(ctx, "\n", "\n", &Tag{
-			Tag:    input.Tag,
-			Object: &GitObject{SHA: input.Object},
-		})
+		_, _, err = client.Git.CreateTag(ctx, "\n", "\n", inputTag)
 		return err
+	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Git.CreateTag(ctx, "o", "r", inputTag)
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
 	})
 }
 
 func TestTag_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &Tag{}, "{}")
 
 	u := &Tag{
-		Tag:     String("tag"),
-		SHA:     String("sha"),
-		URL:     String("url"),
-		Message: String("msg"),
+		Tag:     Ptr("tag"),
+		SHA:     Ptr("sha"),
+		URL:     Ptr("url"),
+		Message: Ptr("msg"),
 		Tagger: &CommitAuthor{
-			Date:  &referenceTime,
-			Name:  String("name"),
-			Email: String("email"),
-			Login: String("login"),
+			Date:  &Timestamp{referenceTime},
+			Name:  Ptr("name"),
+			Email: Ptr("email"),
+			Login: Ptr("login"),
 		},
 		Object: &GitObject{
-			Type: String("type"),
-			SHA:  String("sha"),
-			URL:  String("url"),
+			Type: Ptr("type"),
+			SHA:  Ptr("sha"),
+			URL:  Ptr("url"),
 		},
 		Verification: &SignatureVerification{
-			Verified:  Bool(true),
-			Reason:    String("reason"),
-			Signature: String("sign"),
-			Payload:   String("payload"),
+			Verified:  Ptr(true),
+			Reason:    Ptr("reason"),
+			Signature: Ptr("sign"),
+			Payload:   Ptr("payload"),
 		},
-		NodeID: String("nid"),
+		NodeID: Ptr("nid"),
 	}
 
 	want := `{
@@ -141,18 +156,19 @@ func TestTag_Marshal(t *testing.T) {
 }
 
 func TestCreateTagRequest_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &createTagRequest{}, "{}")
 
 	u := &createTagRequest{
-		Tag:     String("tag"),
-		Message: String("msg"),
-		Object:  String("obj"),
-		Type:    String("type"),
+		Tag:     Ptr("tag"),
+		Message: Ptr("msg"),
+		Object:  Ptr("obj"),
+		Type:    Ptr("type"),
 		Tagger: &CommitAuthor{
-			Date:  &referenceTime,
-			Name:  String("name"),
-			Email: String("email"),
-			Login: String("login"),
+			Date:  &Timestamp{referenceTime},
+			Name:  Ptr("name"),
+			Email: Ptr("email"),
+			Login: Ptr("login"),
 		},
 	}
 

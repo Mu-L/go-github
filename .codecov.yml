@@ -3,3 +3,5 @@ ignore:
   - "github/github-accessors.go"
   # ignore experimental scrape package
   - "scrape"
+  # ignore tools
+  - "tools"

@@ -49,7 +49,9 @@ type updateRefRequest struct {
 
 // GetRef fetches a single reference in a repository.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#get-a-reference
+// GitHub API docs: https://docs.github.com/rest/git/refs#get-a-reference
+//
+//meta:operation GET /repos/{owner}/{repo}/git/ref/{ref}
 func (s *GitService) GetRef(ctx context.Context, owner string, repo string, ref string) (*Reference, *Response, error) {
 	ref = strings.TrimPrefix(ref, "refs/")
 	u := fmt.Sprintf("repos/%v/%v/git/ref/%v", owner, repo, refURLEscape(ref))
@@ -88,7 +90,9 @@ type ReferenceListOptions struct {
 // ListMatchingRefs lists references in a repository that match a supplied ref.
 // Use an empty ref to list all references.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#list-matching-references
+// GitHub API docs: https://docs.github.com/rest/git/refs#list-matching-references
+//
+//meta:operation GET /repos/{owner}/{repo}/git/matching-refs/{ref}
 func (s *GitService) ListMatchingRefs(ctx context.Context, owner, repo string, opts *ReferenceListOptions) ([]*Reference, *Response, error) {
 	var ref string
 	if opts != nil {
@@ -116,12 +120,14 @@ func (s *GitService) ListMatchingRefs(ctx context.Context, owner, repo string, o
 
 // CreateRef creates a new ref in a repository.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#create-a-reference
+// GitHub API docs: https://docs.github.com/rest/git/refs#create-a-reference
+//
+//meta:operation POST /repos/{owner}/{repo}/git/refs
 func (s *GitService) CreateRef(ctx context.Context, owner string, repo string, ref *Reference) (*Reference, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/git/refs", owner, repo)
 	req, err := s.client.NewRequest("POST", u, &createRefRequest{
 		// back-compat with previous behavior that didn't require 'refs/' prefix
-		Ref: String("refs/" + strings.TrimPrefix(*ref.Ref, "refs/")),
+		Ref: Ptr("refs/" + strings.TrimPrefix(*ref.Ref, "refs/")),
 		SHA: ref.Object.SHA,
 	})
 	if err != nil {
@@ -139,10 +145,12 @@ func (s *GitService) CreateRef(ctx context.Context, owner string, repo string, r
 
 // UpdateRef updates an existing ref in a repository.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#update-a-reference
+// GitHub API docs: https://docs.github.com/rest/git/refs#update-a-reference
+//
+//meta:operation PATCH /repos/{owner}/{repo}/git/refs/{ref}
 func (s *GitService) UpdateRef(ctx context.Context, owner string, repo string, ref *Reference, force bool) (*Reference, *Response, error) {
 	refPath := strings.TrimPrefix(*ref.Ref, "refs/")
-	u := fmt.Sprintf("repos/%v/%v/git/refs/%v", owner, repo, refPath)
+	u := fmt.Sprintf("repos/%v/%v/git/refs/%v", owner, repo, refURLEscape(refPath))
 	req, err := s.client.NewRequest("PATCH", u, &updateRefRequest{
 		SHA:   ref.Object.SHA,
 		Force: &force,
@@ -162,7 +170,9 @@ func (s *GitService) UpdateRef(ctx context.Context, owner string, repo string, r
 
 // DeleteRef deletes a ref from a repository.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#delete-a-reference
+// GitHub API docs: https://docs.github.com/rest/git/refs#delete-a-reference
+//
+//meta:operation DELETE /repos/{owner}/{repo}/git/refs/{ref}
 func (s *GitService) DeleteRef(ctx context.Context, owner string, repo string, ref string) (*Response, error) {
 	ref = strings.TrimPrefix(ref, "refs/")
 	u := fmt.Sprintf("repos/%v/%v/git/refs/%v", owner, repo, refURLEscape(ref))

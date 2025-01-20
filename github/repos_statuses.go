@@ -8,7 +8,6 @@ package github
 import (
 	"context"
 	"fmt"
-	"time"
 )
 
 // RepoStatus represents the status of a repository at a particular reference.
@@ -35,8 +34,8 @@ type RepoStatus struct {
 	AvatarURL *string `json:"avatar_url,omitempty"`
 
 	Creator   *User      `json:"creator,omitempty"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	CreatedAt *Timestamp `json:"created_at,omitempty"`
+	UpdatedAt *Timestamp `json:"updated_at,omitempty"`
 }
 
 func (r RepoStatus) String() string {
@@ -46,7 +45,9 @@ func (r RepoStatus) String() string {
 // ListStatuses lists the statuses of a repository at the specified
 // reference. ref can be a SHA, a branch name, or a tag name.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#list-commit-statuses-for-a-reference
+// GitHub API docs: https://docs.github.com/rest/commits/statuses#list-commit-statuses-for-a-reference
+//
+//meta:operation GET /repos/{owner}/{repo}/commits/{ref}/statuses
 func (s *RepositoriesService) ListStatuses(ctx context.Context, owner, repo, ref string, opts *ListOptions) ([]*RepoStatus, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/commits/%v/statuses", owner, repo, refURLEscape(ref))
 	u, err := addOptions(u, opts)
@@ -71,7 +72,9 @@ func (s *RepositoriesService) ListStatuses(ctx context.Context, owner, repo, ref
 // CreateStatus creates a new status for a repository at the specified
 // reference. Ref can be a SHA, a branch name, or a tag name.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#create-a-commit-status
+// GitHub API docs: https://docs.github.com/rest/commits/statuses#create-a-commit-status
+//
+//meta:operation POST /repos/{owner}/{repo}/statuses/{sha}
 func (s *RepositoriesService) CreateStatus(ctx context.Context, owner, repo, ref string, status *RepoStatus) (*RepoStatus, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/statuses/%v", owner, repo, refURLEscape(ref))
 	req, err := s.client.NewRequest("POST", u, status)
@@ -110,7 +113,9 @@ func (s CombinedStatus) String() string {
 // GetCombinedStatus returns the combined status of a repository at the specified
 // reference. ref can be a SHA, a branch name, or a tag name.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#get-the-combined-status-for-a-specific-reference
+// GitHub API docs: https://docs.github.com/rest/commits/statuses#get-the-combined-status-for-a-specific-reference
+//
+//meta:operation GET /repos/{owner}/{repo}/commits/{ref}/status
 func (s *RepositoriesService) GetCombinedStatus(ctx context.Context, owner, repo, ref string, opts *ListOptions) (*CombinedStatus, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/commits/%v/status", owner, repo, refURLEscape(ref))
 	u, err := addOptions(u, opts)

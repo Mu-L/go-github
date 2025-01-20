@@ -7,9 +7,8 @@ package github
 
 import (
 	"context"
-	"fmt"
-
 	"encoding/json"
+	"fmt"
 )
 
 // RepositoryListForksOptions specifies the optional parameters to the
@@ -24,7 +23,9 @@ type RepositoryListForksOptions struct {
 
 // ListForks lists the forks of the specified repository.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#list-forks
+// GitHub API docs: https://docs.github.com/rest/repos/forks#list-forks
+//
+//meta:operation GET /repos/{owner}/{repo}/forks
 func (s *RepositoriesService) ListForks(ctx context.Context, owner, repo string, opts *RepositoryListForksOptions) ([]*Repository, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/forks", owner, repo)
 	u, err := addOptions(u, opts)
@@ -53,7 +54,9 @@ func (s *RepositoriesService) ListForks(ctx context.Context, owner, repo string,
 // RepositoriesService.CreateFork method.
 type RepositoryCreateForkOptions struct {
 	// The organization to fork the repository into.
-	Organization string `url:"organization,omitempty"`
+	Organization      string `json:"organization,omitempty"`
+	Name              string `json:"name,omitempty"`
+	DefaultBranchOnly bool   `json:"default_branch_only,omitempty"`
 }
 
 // CreateFork creates a fork of the specified repository.
@@ -65,15 +68,13 @@ type RepositoryCreateForkOptions struct {
 // A follow up request, after a delay of a second or so, should result
 // in a successful request.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/repos/#create-a-fork
+// GitHub API docs: https://docs.github.com/rest/repos/forks#create-a-fork
+//
+//meta:operation POST /repos/{owner}/{repo}/forks
 func (s *RepositoriesService) CreateFork(ctx context.Context, owner, repo string, opts *RepositoryCreateForkOptions) (*Repository, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/forks", owner, repo)
-	u, err := addOptions(u, opts)
-	if err != nil {
-		return nil, nil, err
-	}
 
-	req, err := s.client.NewRequest("POST", u, nil)
+	req, err := s.client.NewRequest("POST", u, opts)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -9,7 +9,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 )
 
 var ErrMixedCommentStyles = errors.New("cannot use both position and side/line form comments")
@@ -20,7 +19,7 @@ type PullRequestReview struct {
 	NodeID         *string    `json:"node_id,omitempty"`
 	User           *User      `json:"user,omitempty"`
 	Body           *string    `json:"body,omitempty"`
-	SubmittedAt    *time.Time `json:"submitted_at,omitempty"`
+	SubmittedAt    *Timestamp `json:"submitted_at,omitempty"`
 	CommitID       *string    `json:"commit_id,omitempty"`
 	HTMLURL        *string    `json:"html_url,omitempty"`
 	PullRequestURL *string    `json:"pull_request_url,omitempty"`
@@ -101,7 +100,9 @@ func (r PullRequestReviewDismissalRequest) String() string {
 
 // ListReviews lists all reviews on the specified pull request.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/pulls/#list-reviews-for-a-pull-request
+// GitHub API docs: https://docs.github.com/rest/pulls/reviews#list-reviews-for-a-pull-request
+//
+//meta:operation GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews
 func (s *PullRequestsService) ListReviews(ctx context.Context, owner, repo string, number int, opts *ListOptions) ([]*PullRequestReview, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/pulls/%d/reviews", owner, repo, number)
 	u, err := addOptions(u, opts)
@@ -125,11 +126,9 @@ func (s *PullRequestsService) ListReviews(ctx context.Context, owner, repo strin
 
 // GetReview fetches the specified pull request review.
 //
-// TODO: Follow up with GitHub support about an issue with this method's
-// returned error format and remove this comment once it's fixed.
-// Read more about it here - https://github.com/google/go-github/issues/540
+// GitHub API docs: https://docs.github.com/rest/pulls/reviews#get-a-review-for-a-pull-request
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/pulls/#get-a-review-for-a-pull-request
+//meta:operation GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}
 func (s *PullRequestsService) GetReview(ctx context.Context, owner, repo string, number int, reviewID int64) (*PullRequestReview, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/pulls/%d/reviews/%d", owner, repo, number, reviewID)
 
@@ -149,11 +148,9 @@ func (s *PullRequestsService) GetReview(ctx context.Context, owner, repo string,
 
 // DeletePendingReview deletes the specified pull request pending review.
 //
-// TODO: Follow up with GitHub support about an issue with this method's
-// returned error format and remove this comment once it's fixed.
-// Read more about it here - https://github.com/google/go-github/issues/540
+// GitHub API docs: https://docs.github.com/rest/pulls/reviews#delete-a-pending-review-for-a-pull-request
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/pulls/#delete-a-pending-review-for-a-pull-request
+//meta:operation DELETE /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}
 func (s *PullRequestsService) DeletePendingReview(ctx context.Context, owner, repo string, number int, reviewID int64) (*PullRequestReview, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/pulls/%d/reviews/%d", owner, repo, number, reviewID)
 
@@ -173,11 +170,9 @@ func (s *PullRequestsService) DeletePendingReview(ctx context.Context, owner, re
 
 // ListReviewComments lists all the comments for the specified review.
 //
-// TODO: Follow up with GitHub support about an issue with this method's
-// returned error format and remove this comment once it's fixed.
-// Read more about it here - https://github.com/google/go-github/issues/540
+// GitHub API docs: https://docs.github.com/rest/pulls/reviews#list-comments-for-a-pull-request-review
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/pulls/#list-comments-for-a-pull-request-review
+//meta:operation GET /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/comments
 func (s *PullRequestsService) ListReviewComments(ctx context.Context, owner, repo string, number int, reviewID int64, opts *ListOptions) ([]*PullRequestComment, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/pulls/%d/reviews/%d/comments", owner, repo, number, reviewID)
 	u, err := addOptions(u, opts)
@@ -201,43 +196,43 @@ func (s *PullRequestsService) ListReviewComments(ctx context.Context, owner, rep
 
 // CreateReview creates a new review on the specified pull request.
 //
-// TODO: Follow up with GitHub support about an issue with this method's
-// returned error format and remove this comment once it's fixed.
-// Read more about it here - https://github.com/google/go-github/issues/540
-//
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/pulls/#create-a-review-for-a-pull-request
-//
 // In order to use multi-line comments, you must use the "comfort fade" preview.
 // This replaces the use of the "Position" field in comments with 4 new fields:
-//   [Start]Side, and [Start]Line.
+//
+//	[Start]Side, and [Start]Line.
+//
 // These new fields must be used for ALL comments (including single-line),
 // with the following restrictions (empirically observed, so subject to change).
 //
 // For single-line "comfort fade" comments, you must use:
 //
-//    Path:  &path,  // as before
-//    Body:  &body,  // as before
-//    Side:  &"RIGHT" (or "LEFT")
-//    Line:  &123,  // NOT THE SAME AS POSITION, this is an actual line number.
+//	Path:  &path,  // as before
+//	Body:  &body,  // as before
+//	Side:  &"RIGHT" (or "LEFT")
+//	Line:  &123,  // NOT THE SAME AS POSITION, this is an actual line number.
 //
 // If StartSide or StartLine is used with single-line comments, a 422 is returned.
 //
 // For multi-line "comfort fade" comments, you must use:
 //
-//    Path:      &path,  // as before
-//    Body:      &body,  // as before
-//    StartSide: &"RIGHT" (or "LEFT")
-//    Side:      &"RIGHT" (or "LEFT")
-//    StartLine: &120,
-//    Line:      &125,
+//	Path:      &path,  // as before
+//	Body:      &body,  // as before
+//	StartSide: &"RIGHT" (or "LEFT")
+//	Side:      &"RIGHT" (or "LEFT")
+//	StartLine: &120,
+//	Line:      &125,
 //
 // Suggested edits are made by commenting on the lines to replace, and including the
 // suggested edit in a block like this (it may be surrounded in non-suggestion markdown):
 //
-//    ```suggestion
-//    Use this instead.
-//    It is waaaaaay better.
-//    ```
+//	```suggestion
+//	Use this instead.
+//	It is waaaaaay better.
+//	```
+//
+// GitHub API docs: https://docs.github.com/rest/pulls/reviews#create-a-review-for-a-pull-request
+//
+//meta:operation POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews
 func (s *PullRequestsService) CreateReview(ctx context.Context, owner, repo string, number int, review *PullRequestReviewRequest) (*PullRequestReview, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/pulls/%d/reviews", owner, repo, number)
 
@@ -266,7 +261,9 @@ func (s *PullRequestsService) CreateReview(ctx context.Context, owner, repo stri
 
 // UpdateReview updates the review summary on the specified pull request.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/pulls/#update-a-review-for-a-pull-request
+// GitHub API docs: https://docs.github.com/rest/pulls/reviews#update-a-review-for-a-pull-request
+//
+//meta:operation PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}
 func (s *PullRequestsService) UpdateReview(ctx context.Context, owner, repo string, number int, reviewID int64, body string) (*PullRequestReview, *Response, error) {
 	opts := &struct {
 		Body string `json:"body"`
@@ -289,11 +286,9 @@ func (s *PullRequestsService) UpdateReview(ctx context.Context, owner, repo stri
 
 // SubmitReview submits a specified review on the specified pull request.
 //
-// TODO: Follow up with GitHub support about an issue with this method's
-// returned error format and remove this comment once it's fixed.
-// Read more about it here - https://github.com/google/go-github/issues/540
+// GitHub API docs: https://docs.github.com/rest/pulls/reviews#submit-a-review-for-a-pull-request
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/pulls/#submit-a-review-for-a-pull-request
+//meta:operation POST /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/events
 func (s *PullRequestsService) SubmitReview(ctx context.Context, owner, repo string, number int, reviewID int64, review *PullRequestReviewRequest) (*PullRequestReview, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/pulls/%d/reviews/%d/events", owner, repo, number, reviewID)
 
@@ -313,11 +308,9 @@ func (s *PullRequestsService) SubmitReview(ctx context.Context, owner, repo stri
 
 // DismissReview dismisses a specified review on the specified pull request.
 //
-// TODO: Follow up with GitHub support about an issue with this method's
-// returned error format and remove this comment once it's fixed.
-// Read more about it here - https://github.com/google/go-github/issues/540
+// GitHub API docs: https://docs.github.com/rest/pulls/reviews#dismiss-a-review-for-a-pull-request
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/pulls/#dismiss-a-review-for-a-pull-request
+//meta:operation PUT /repos/{owner}/{repo}/pulls/{pull_number}/reviews/{review_id}/dismissals
 func (s *PullRequestsService) DismissReview(ctx context.Context, owner, repo string, number int, reviewID int64, review *PullRequestReviewDismissalRequest) (*PullRequestReview, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/pulls/%d/reviews/%d/dismissals", owner, repo, number, reviewID)
 

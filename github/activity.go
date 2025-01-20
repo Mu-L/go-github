@@ -10,7 +10,7 @@ import "context"
 // ActivityService handles communication with the activity related
 // methods of the GitHub API.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/activity/
+// GitHub API docs: https://docs.github.com/rest/activity/
 type ActivityService service
 
 // FeedLink represents a link to a related resource.
@@ -45,17 +45,22 @@ type FeedLinks struct {
 // ListFeeds lists all the feeds available to the authenticated user.
 //
 // GitHub provides several timeline resources in Atom format:
-//     Timeline: The GitHub global public timeline
-//     User: The public timeline for any user, using URI template
-//     Current user public: The public timeline for the authenticated user
-//     Current user: The private timeline for the authenticated user
-//     Current user actor: The private timeline for activity created by the
-//         authenticated user
-//     Current user organizations: The private timeline for the organizations
-//         the authenticated user is a member of.
+//
+//	Timeline: The GitHub global public timeline
+//	User: The public timeline for any user, using URI template
+//	Current user public: The public timeline for the authenticated user
+//	Current user: The private timeline for the authenticated user
+//	Current user actor: The private timeline for activity created by the
+//	    authenticated user
+//	Current user organizations: The private timeline for the organizations
+//	    the authenticated user is a member of.
 //
 // Note: Private feeds are only returned when authenticating via Basic Auth
 // since current feed URIs use the older, non revocable auth tokens.
+//
+// GitHub API docs: https://docs.github.com/rest/activity/feeds#get-feeds
+//
+//meta:operation GET /feeds
 func (s *ActivityService) ListFeeds(ctx context.Context) (*Feeds, *Response, error) {
 	req, err := s.client.NewRequest("GET", "feeds", nil)
 	if err != nil {
