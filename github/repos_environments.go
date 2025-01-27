@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 // Environment represents a single environment in a repository.
@@ -27,6 +28,7 @@ type Environment struct {
 	HTMLURL         *string           `json:"html_url,omitempty"`
 	CreatedAt       *Timestamp        `json:"created_at,omitempty"`
 	UpdatedAt       *Timestamp        `json:"updated_at,omitempty"`
+	CanAdminsBypass *bool             `json:"can_admins_bypass,omitempty"`
 	ProtectionRules []*ProtectionRule `json:"protection_rules,omitempty"`
 }
 
@@ -50,17 +52,24 @@ type EnvResponse struct {
 
 // ProtectionRule represents a single protection rule applied to the environment.
 type ProtectionRule struct {
-	ID        *int64              `json:"id,omitempty"`
-	NodeID    *string             `json:"node_id,omitempty"`
-	Type      *string             `json:"type,omitempty"`
-	WaitTimer *int                `json:"wait_timer,omitempty"`
-	Reviewers []*RequiredReviewer `json:"reviewers,omitempty"`
+	ID                *int64              `json:"id,omitempty"`
+	NodeID            *string             `json:"node_id,omitempty"`
+	PreventSelfReview *bool               `json:"prevent_self_review,omitempty"`
+	Type              *string             `json:"type,omitempty"`
+	WaitTimer         *int                `json:"wait_timer,omitempty"`
+	Reviewers         []*RequiredReviewer `json:"reviewers,omitempty"`
 }
 
 // RequiredReviewer represents a required reviewer.
 type RequiredReviewer struct {
 	Type     *string     `json:"type,omitempty"`
 	Reviewer interface{} `json:"reviewer,omitempty"`
+}
+
+// EnvironmentListOptions specifies the optional parameters to the
+// RepositoriesService.ListEnvironments method.
+type EnvironmentListOptions struct {
+	ListOptions
 }
 
 // UnmarshalJSON implements the json.Unmarshaler interface.
@@ -98,9 +107,15 @@ func (r *RequiredReviewer) UnmarshalJSON(data []byte) error {
 
 // ListEnvironments lists all environments for a repository.
 //
-// GitHub API docs: https://docs.github.com/en/rest/reference/repos#get-all-environments
-func (s *RepositoriesService) ListEnvironments(ctx context.Context, owner, repo string) (*EnvResponse, *Response, error) {
+// GitHub API docs: https://docs.github.com/rest/deployments/environments#list-environments
+//
+//meta:operation GET /repos/{owner}/{repo}/environments
+func (s *RepositoriesService) ListEnvironments(ctx context.Context, owner, repo string, opts *EnvironmentListOptions) (*EnvResponse, *Response, error) {
 	u := fmt.Sprintf("repos/%s/%s/environments", owner, repo)
+	u, err := addOptions(u, opts)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	req, err := s.client.NewRequest("GET", u, nil)
 	if err != nil {
@@ -117,7 +132,9 @@ func (s *RepositoriesService) ListEnvironments(ctx context.Context, owner, repo 
 
 // GetEnvironment get a single environment for a repository.
 //
-// GitHub API docs: https://docs.github.com/en/rest/reference/repos#get-an-environment
+// GitHub API docs: https://docs.github.com/rest/deployments/environments#get-an-environment
+//
+//meta:operation GET /repos/{owner}/{repo}/environments/{environment_name}
 func (s *RepositoriesService) GetEnvironment(ctx context.Context, owner, repo, name string) (*Environment, *Response, error) {
 	u := fmt.Sprintf("repos/%s/%s/environments/%s", owner, repo, name)
 
@@ -136,10 +153,14 @@ func (s *RepositoriesService) GetEnvironment(ctx context.Context, owner, repo, n
 
 // MarshalJSON implements the json.Marshaler interface.
 // As the only way to clear a WaitTimer is to set it to 0, a missing WaitTimer object should default to 0, not null.
+// As the default value for CanAdminsBypass is true, a nil value here marshals to true.
 func (c *CreateUpdateEnvironment) MarshalJSON() ([]byte, error) {
 	type Alias CreateUpdateEnvironment
 	if c.WaitTimer == nil {
-		c.WaitTimer = Int(0)
+		c.WaitTimer = Ptr(0)
+	}
+	if c.CanAdminsBypass == nil {
+		c.CanAdminsBypass = Ptr(true)
 	}
 	return json.Marshal(&struct {
 		*Alias
@@ -155,16 +176,54 @@ func (c *CreateUpdateEnvironment) MarshalJSON() ([]byte, error) {
 type CreateUpdateEnvironment struct {
 	WaitTimer              *int            `json:"wait_timer"`
 	Reviewers              []*EnvReviewers `json:"reviewers"`
+	CanAdminsBypass        *bool           `json:"can_admins_bypass"`
 	DeploymentBranchPolicy *BranchPolicy   `json:"deployment_branch_policy"`
+	PreventSelfReview      *bool           `json:"prevent_self_review,omitempty"`
+}
+
+// createUpdateEnvironmentNoEnterprise represents the fields accepted for Pro/Teams private repos.
+// Ref: https://docs.github.com/actions/deployment/targeting-different-environments/using-environments-for-deployment
+// See https://github.com/google/go-github/issues/2602 for more information.
+type createUpdateEnvironmentNoEnterprise struct {
+	DeploymentBranchPolicy *BranchPolicy `json:"deployment_branch_policy"`
 }
 
 // CreateUpdateEnvironment create or update a new environment for a repository.
 //
-// GitHub API docs: https://docs.github.com/en/rest/reference/repos#create-or-update-an-environment
+// GitHub API docs: https://docs.github.com/rest/deployments/environments#create-or-update-an-environment
+//
+//meta:operation PUT /repos/{owner}/{repo}/environments/{environment_name}
 func (s *RepositoriesService) CreateUpdateEnvironment(ctx context.Context, owner, repo, name string, environment *CreateUpdateEnvironment) (*Environment, *Response, error) {
 	u := fmt.Sprintf("repos/%s/%s/environments/%s", owner, repo, name)
 
 	req, err := s.client.NewRequest("PUT", u, environment)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	e := new(Environment)
+	resp, err := s.client.Do(ctx, req, e)
+	if err != nil {
+		// The API returns 422 when the pricing plan doesn't support all the fields sent.
+		// This path will be executed for Pro/Teams private repos.
+		// For public repos, regardless of the pricing plan, all fields supported.
+		// For Free plan private repos the returned error code is 404.
+		// We are checking that the user didn't try to send a value for unsupported fields,
+		// and return an error if they did.
+		if resp != nil && resp.StatusCode == http.StatusUnprocessableEntity && environment != nil && len(environment.Reviewers) == 0 && environment.GetWaitTimer() == 0 {
+			return s.createNewEnvNoEnterprise(ctx, u, environment)
+		}
+		return nil, resp, err
+	}
+	return e, resp, nil
+}
+
+// createNewEnvNoEnterprise is an internal function for cases where the original call returned 422.
+// Currently only the `deployment_branch_policy` parameter is supported for Pro/Team private repos.
+func (s *RepositoriesService) createNewEnvNoEnterprise(ctx context.Context, u string, environment *CreateUpdateEnvironment) (*Environment, *Response, error) {
+	req, err := s.client.NewRequest("PUT", u, &createUpdateEnvironmentNoEnterprise{
+		DeploymentBranchPolicy: environment.DeploymentBranchPolicy,
+	})
 	if err != nil {
 		return nil, nil, err
 	}
@@ -179,7 +238,9 @@ func (s *RepositoriesService) CreateUpdateEnvironment(ctx context.Context, owner
 
 // DeleteEnvironment delete an environment from a repository.
 //
-// GitHub API docs: https://docs.github.com/en/rest/reference/repos#delete-an-environment
+// GitHub API docs: https://docs.github.com/rest/deployments/environments#delete-an-environment
+//
+//meta:operation DELETE /repos/{owner}/{repo}/environments/{environment_name}
 func (s *RepositoriesService) DeleteEnvironment(ctx context.Context, owner, repo, name string) (*Response, error) {
 	u := fmt.Sprintf("repos/%s/%s/environments/%s", owner, repo, name)
 

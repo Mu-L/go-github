@@ -16,8 +16,8 @@ import (
 )
 
 func TestOrganizationsService_ListHooks(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/hooks", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -33,7 +33,7 @@ func TestOrganizationsService_ListHooks(t *testing.T) {
 		t.Errorf("Organizations.ListHooks returned error: %v", err)
 	}
 
-	want := []*Hook{{ID: Int64(1)}, {ID: Int64(2)}}
+	want := []*Hook{{ID: Ptr(int64(1))}, {ID: Ptr(int64(2))}}
 	if !cmp.Equal(hooks, want) {
 		t.Errorf("Organizations.ListHooks returned %+v, want %+v", hooks, want)
 	}
@@ -54,8 +54,8 @@ func TestOrganizationsService_ListHooks(t *testing.T) {
 }
 
 func TestOrganizationsService_ListHooks_invalidOrg(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Organizations.ListHooks(ctx, "%", nil)
@@ -63,14 +63,14 @@ func TestOrganizationsService_ListHooks_invalidOrg(t *testing.T) {
 }
 
 func TestOrganizationsService_CreateHook(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
-	input := &Hook{CreatedAt: &referenceTime}
+	input := &Hook{CreatedAt: &Timestamp{referenceTime}}
 
 	mux.HandleFunc("/orgs/o/hooks", func(w http.ResponseWriter, r *http.Request) {
 		v := new(createHookRequest)
-		json.NewDecoder(r.Body).Decode(v)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
 
 		testMethod(t, r, "POST")
 		want := &createHookRequest{Name: "web"}
@@ -87,7 +87,7 @@ func TestOrganizationsService_CreateHook(t *testing.T) {
 		t.Errorf("Organizations.CreateHook returned error: %v", err)
 	}
 
-	want := &Hook{ID: Int64(1)}
+	want := &Hook{ID: Ptr(int64(1))}
 	if !cmp.Equal(hook, want) {
 		t.Errorf("Organizations.CreateHook returned %+v, want %+v", hook, want)
 	}
@@ -108,8 +108,8 @@ func TestOrganizationsService_CreateHook(t *testing.T) {
 }
 
 func TestOrganizationsService_GetHook(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/hooks/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -122,7 +122,7 @@ func TestOrganizationsService_GetHook(t *testing.T) {
 		t.Errorf("Organizations.GetHook returned error: %v", err)
 	}
 
-	want := &Hook{ID: Int64(1)}
+	want := &Hook{ID: Ptr(int64(1))}
 	if !cmp.Equal(hook, want) {
 		t.Errorf("Organizations.GetHook returned %+v, want %+v", hook, want)
 	}
@@ -132,11 +132,19 @@ func TestOrganizationsService_GetHook(t *testing.T) {
 		_, _, err = client.Organizations.GetHook(ctx, "\n", -1)
 		return err
 	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Organizations.GetHook(ctx, "o", 1)
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
 }
 
 func TestOrganizationsService_GetHook_invalidOrg(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Organizations.GetHook(ctx, "%", 1)
@@ -144,14 +152,14 @@ func TestOrganizationsService_GetHook_invalidOrg(t *testing.T) {
 }
 
 func TestOrganizationsService_EditHook(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	input := &Hook{}
 
 	mux.HandleFunc("/orgs/o/hooks/1", func(w http.ResponseWriter, r *http.Request) {
 		v := new(Hook)
-		json.NewDecoder(r.Body).Decode(v)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
 
 		testMethod(t, r, "PATCH")
 		if !cmp.Equal(v, input) {
@@ -167,7 +175,7 @@ func TestOrganizationsService_EditHook(t *testing.T) {
 		t.Errorf("Organizations.EditHook returned error: %v", err)
 	}
 
-	want := &Hook{ID: Int64(1)}
+	want := &Hook{ID: Ptr(int64(1))}
 	if !cmp.Equal(hook, want) {
 		t.Errorf("Organizations.EditHook returned %+v, want %+v", hook, want)
 	}
@@ -177,11 +185,19 @@ func TestOrganizationsService_EditHook(t *testing.T) {
 		_, _, err = client.Organizations.EditHook(ctx, "\n", -1, input)
 		return err
 	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Organizations.EditHook(ctx, "o", 1, input)
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
 }
 
 func TestOrganizationsService_EditHook_invalidOrg(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Organizations.EditHook(ctx, "%", 1, nil)
@@ -189,8 +205,8 @@ func TestOrganizationsService_EditHook_invalidOrg(t *testing.T) {
 }
 
 func TestOrganizationsService_PingHook(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/hooks/1/pings", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
@@ -214,8 +230,8 @@ func TestOrganizationsService_PingHook(t *testing.T) {
 }
 
 func TestOrganizationsService_DeleteHook(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/hooks/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -239,8 +255,8 @@ func TestOrganizationsService_DeleteHook(t *testing.T) {
 }
 
 func TestOrganizationsService_DeleteHook_invalidOrg(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, err := client.Organizations.DeleteHook(ctx, "%", 1)

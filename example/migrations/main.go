@@ -12,19 +12,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/go-github/v38/github"
-	"golang.org/x/oauth2"
+	"github.com/google/go-github/v68/github"
 )
 
 func fetchAllUserMigrations() ([]*github.UserMigration, error) {
 	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: "<GITHUB_AUTH_TOKEN>"},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := github.NewClient(nil).WithAuthToken("<GITHUB_AUTH_TOKEN>")
 
-	migrations, _, err := client.Migrations.ListUserMigrations(ctx)
+	migrations, _, err := client.Migrations.ListUserMigrations(ctx, &github.ListOptions{Page: 1})
 	return migrations, err
 }
 

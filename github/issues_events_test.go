@@ -15,8 +15,8 @@ import (
 )
 
 func TestIssuesService_ListIssueEvents(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/issues/1/events", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -35,7 +35,7 @@ func TestIssuesService_ListIssueEvents(t *testing.T) {
 		t.Errorf("Issues.ListIssueEvents returned error: %v", err)
 	}
 
-	want := []*IssueEvent{{ID: Int64(1)}}
+	want := []*IssueEvent{{ID: Ptr(int64(1))}}
 	if !cmp.Equal(events, want) {
 		t.Errorf("Issues.ListIssueEvents returned %+v, want %+v", events, want)
 	}
@@ -56,8 +56,8 @@ func TestIssuesService_ListIssueEvents(t *testing.T) {
 }
 
 func TestIssuesService_ListRepositoryEvents(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/issues/events", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -75,7 +75,7 @@ func TestIssuesService_ListRepositoryEvents(t *testing.T) {
 		t.Errorf("Issues.ListRepositoryEvents returned error: %v", err)
 	}
 
-	want := []*IssueEvent{{ID: Int64(1)}}
+	want := []*IssueEvent{{ID: Ptr(int64(1))}}
 	if !cmp.Equal(events, want) {
 		t.Errorf("Issues.ListRepositoryEvents returned %+v, want %+v", events, want)
 	}
@@ -96,8 +96,8 @@ func TestIssuesService_ListRepositoryEvents(t *testing.T) {
 }
 
 func TestIssuesService_GetEvent(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/issues/events/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -110,7 +110,7 @@ func TestIssuesService_GetEvent(t *testing.T) {
 		t.Errorf("Issues.GetEvent returned error: %v", err)
 	}
 
-	want := &IssueEvent{ID: Int64(1)}
+	want := &IssueEvent{ID: Ptr(int64(1))}
 	if !cmp.Equal(event, want) {
 		t.Errorf("Issues.GetEvent returned %+v, want %+v", event, want)
 	}
@@ -131,11 +131,12 @@ func TestIssuesService_GetEvent(t *testing.T) {
 }
 
 func TestRename_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &Rename{}, "{}")
 
 	u := &Rename{
-		From: String("from"),
-		To:   String("to"),
+		From: Ptr("from"),
+		To:   Ptr("to"),
 	}
 
 	want := `{
@@ -147,13 +148,14 @@ func TestRename_Marshal(t *testing.T) {
 }
 
 func TestDismissedReview_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &DismissedReview{}, "{}")
 
 	u := &DismissedReview{
-		State:             String("state"),
-		ReviewID:          Int64(1),
-		DismissalMessage:  String("dm"),
-		DismissalCommitID: String("dcid"),
+		State:             Ptr("state"),
+		ReviewID:          Ptr(int64(1)),
+		DismissalMessage:  Ptr("dm"),
+		DismissalCommitID: Ptr("dcid"),
 	}
 
 	want := `{
@@ -167,126 +169,182 @@ func TestDismissedReview_Marshal(t *testing.T) {
 }
 
 func TestIssueEvent_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &IssueEvent{}, "{}")
 
 	u := &IssueEvent{
-		ID:  Int64(1),
-		URL: String("url"),
+		ID:  Ptr(int64(1)),
+		URL: Ptr("url"),
 		Actor: &User{
-			Login:           String("l"),
-			ID:              Int64(1),
-			URL:             String("u"),
-			AvatarURL:       String("a"),
-			GravatarID:      String("g"),
-			Name:            String("n"),
-			Company:         String("c"),
-			Blog:            String("b"),
-			Location:        String("l"),
-			Email:           String("e"),
-			Hireable:        Bool(true),
-			Bio:             String("b"),
-			TwitterUsername: String("t"),
-			PublicRepos:     Int(1),
-			Followers:       Int(1),
-			Following:       Int(1),
+			Login:           Ptr("l"),
+			ID:              Ptr(int64(1)),
+			URL:             Ptr("u"),
+			AvatarURL:       Ptr("a"),
+			GravatarID:      Ptr("g"),
+			Name:            Ptr("n"),
+			Company:         Ptr("c"),
+			Blog:            Ptr("b"),
+			Location:        Ptr("l"),
+			Email:           Ptr("e"),
+			Hireable:        Ptr(true),
+			Bio:             Ptr("b"),
+			TwitterUsername: Ptr("t"),
+			PublicRepos:     Ptr(1),
+			Followers:       Ptr(1),
+			Following:       Ptr(1),
 			CreatedAt:       &Timestamp{referenceTime},
 			SuspendedAt:     &Timestamp{referenceTime},
 		},
-		Event:     String("event"),
-		CreatedAt: &referenceTime,
-		Issue:     &Issue{ID: Int64(1)},
+		Event:     Ptr("event"),
+		CreatedAt: &Timestamp{referenceTime},
+		Issue:     &Issue{ID: Ptr(int64(1))},
 		Assignee: &User{
-			Login:           String("l"),
-			ID:              Int64(1),
-			URL:             String("u"),
-			AvatarURL:       String("a"),
-			GravatarID:      String("g"),
-			Name:            String("n"),
-			Company:         String("c"),
-			Blog:            String("b"),
-			Location:        String("l"),
-			Email:           String("e"),
-			Hireable:        Bool(true),
-			Bio:             String("b"),
-			TwitterUsername: String("t"),
-			PublicRepos:     Int(1),
-			Followers:       Int(1),
-			Following:       Int(1),
+			Login:           Ptr("l"),
+			ID:              Ptr(int64(1)),
+			URL:             Ptr("u"),
+			AvatarURL:       Ptr("a"),
+			GravatarID:      Ptr("g"),
+			Name:            Ptr("n"),
+			Company:         Ptr("c"),
+			Blog:            Ptr("b"),
+			Location:        Ptr("l"),
+			Email:           Ptr("e"),
+			Hireable:        Ptr(true),
+			Bio:             Ptr("b"),
+			TwitterUsername: Ptr("t"),
+			PublicRepos:     Ptr(1),
+			Followers:       Ptr(1),
+			Following:       Ptr(1),
 			CreatedAt:       &Timestamp{referenceTime},
 			SuspendedAt:     &Timestamp{referenceTime},
 		},
 		Assigner: &User{
-			Login:           String("l"),
-			ID:              Int64(1),
-			URL:             String("u"),
-			AvatarURL:       String("a"),
-			GravatarID:      String("g"),
-			Name:            String("n"),
-			Company:         String("c"),
-			Blog:            String("b"),
-			Location:        String("l"),
-			Email:           String("e"),
-			Hireable:        Bool(true),
-			Bio:             String("b"),
-			TwitterUsername: String("t"),
-			PublicRepos:     Int(1),
-			Followers:       Int(1),
-			Following:       Int(1),
+			Login:           Ptr("l"),
+			ID:              Ptr(int64(1)),
+			URL:             Ptr("u"),
+			AvatarURL:       Ptr("a"),
+			GravatarID:      Ptr("g"),
+			Name:            Ptr("n"),
+			Company:         Ptr("c"),
+			Blog:            Ptr("b"),
+			Location:        Ptr("l"),
+			Email:           Ptr("e"),
+			Hireable:        Ptr(true),
+			Bio:             Ptr("b"),
+			TwitterUsername: Ptr("t"),
+			PublicRepos:     Ptr(1),
+			Followers:       Ptr(1),
+			Following:       Ptr(1),
 			CreatedAt:       &Timestamp{referenceTime},
 			SuspendedAt:     &Timestamp{referenceTime},
 		},
-		CommitID:  String("cid"),
-		Milestone: &Milestone{ID: Int64(1)},
-		Label:     &Label{ID: Int64(1)},
+		CommitID:  Ptr("cid"),
+		Milestone: &Milestone{ID: Ptr(int64(1))},
+		Label:     &Label{ID: Ptr(int64(1))},
 		Rename: &Rename{
-			From: String("from"),
-			To:   String("to"),
+			From: Ptr("from"),
+			To:   Ptr("to"),
 		},
-		LockReason:  String("lr"),
-		ProjectCard: &ProjectCard{ID: Int64(1)},
+		LockReason: Ptr("lr"),
 		DismissedReview: &DismissedReview{
-			State:             String("state"),
-			ReviewID:          Int64(1),
-			DismissalMessage:  String("dm"),
-			DismissalCommitID: String("dcid"),
+			State:             Ptr("state"),
+			ReviewID:          Ptr(int64(1)),
+			DismissalMessage:  Ptr("dm"),
+			DismissalCommitID: Ptr("dcid"),
 		},
 		RequestedReviewer: &User{
-			Login:           String("l"),
-			ID:              Int64(1),
-			URL:             String("u"),
-			AvatarURL:       String("a"),
-			GravatarID:      String("g"),
-			Name:            String("n"),
-			Company:         String("c"),
-			Blog:            String("b"),
-			Location:        String("l"),
-			Email:           String("e"),
-			Hireable:        Bool(true),
-			Bio:             String("b"),
-			TwitterUsername: String("t"),
-			PublicRepos:     Int(1),
-			Followers:       Int(1),
-			Following:       Int(1),
+			Login:           Ptr("l"),
+			ID:              Ptr(int64(1)),
+			URL:             Ptr("u"),
+			AvatarURL:       Ptr("a"),
+			GravatarID:      Ptr("g"),
+			Name:            Ptr("n"),
+			Company:         Ptr("c"),
+			Blog:            Ptr("b"),
+			Location:        Ptr("l"),
+			Email:           Ptr("e"),
+			Hireable:        Ptr(true),
+			Bio:             Ptr("b"),
+			TwitterUsername: Ptr("t"),
+			PublicRepos:     Ptr(1),
+			Followers:       Ptr(1),
+			Following:       Ptr(1),
 			CreatedAt:       &Timestamp{referenceTime},
 			SuspendedAt:     &Timestamp{referenceTime},
 		},
+		RequestedTeam: &Team{
+			ID:              Ptr(int64(1)),
+			NodeID:          Ptr("n"),
+			Name:            Ptr("n"),
+			Description:     Ptr("d"),
+			URL:             Ptr("u"),
+			Slug:            Ptr("s"),
+			Permission:      Ptr("p"),
+			Privacy:         Ptr("p"),
+			MembersCount:    Ptr(1),
+			ReposCount:      Ptr(1),
+			MembersURL:      Ptr("m"),
+			RepositoriesURL: Ptr("r"),
+			Organization: &Organization{
+				Login:     Ptr("l"),
+				ID:        Ptr(int64(1)),
+				NodeID:    Ptr("n"),
+				AvatarURL: Ptr("a"),
+				HTMLURL:   Ptr("h"),
+				Name:      Ptr("n"),
+				Company:   Ptr("c"),
+				Blog:      Ptr("b"),
+				Location:  Ptr("l"),
+				Email:     Ptr("e"),
+			},
+			Parent: &Team{
+				ID:           Ptr(int64(1)),
+				NodeID:       Ptr("n"),
+				Name:         Ptr("n"),
+				Description:  Ptr("d"),
+				URL:          Ptr("u"),
+				Slug:         Ptr("s"),
+				Permission:   Ptr("p"),
+				Privacy:      Ptr("p"),
+				MembersCount: Ptr(1),
+				ReposCount:   Ptr(1),
+			},
+			LDAPDN: Ptr("l"),
+		},
+		PerformedViaGithubApp: &App{
+			ID:     Ptr(int64(1)),
+			NodeID: Ptr("n"),
+			Owner: &User{
+				Login:     Ptr("l"),
+				ID:        Ptr(int64(1)),
+				NodeID:    Ptr("n"),
+				URL:       Ptr("u"),
+				ReposURL:  Ptr("r"),
+				EventsURL: Ptr("e"),
+				AvatarURL: Ptr("a"),
+			},
+			Name:        Ptr("n"),
+			Description: Ptr("d"),
+			HTMLURL:     Ptr("h"),
+			ExternalURL: Ptr("u"),
+		},
 		ReviewRequester: &User{
-			Login:           String("l"),
-			ID:              Int64(1),
-			URL:             String("u"),
-			AvatarURL:       String("a"),
-			GravatarID:      String("g"),
-			Name:            String("n"),
-			Company:         String("c"),
-			Blog:            String("b"),
-			Location:        String("l"),
-			Email:           String("e"),
-			Hireable:        Bool(true),
-			Bio:             String("b"),
-			TwitterUsername: String("t"),
-			PublicRepos:     Int(1),
-			Followers:       Int(1),
-			Following:       Int(1),
+			Login:           Ptr("l"),
+			ID:              Ptr(int64(1)),
+			URL:             Ptr("u"),
+			AvatarURL:       Ptr("a"),
+			GravatarID:      Ptr("g"),
+			Name:            Ptr("n"),
+			Company:         Ptr("c"),
+			Blog:            Ptr("b"),
+			Location:        Ptr("l"),
+			Email:           Ptr("e"),
+			Hireable:        Ptr(true),
+			Bio:             Ptr("b"),
+			TwitterUsername: Ptr("t"),
+			PublicRepos:     Ptr(1),
+			Followers:       Ptr(1),
+			Following:       Ptr(1),
 			CreatedAt:       &Timestamp{referenceTime},
 			SuspendedAt:     &Timestamp{referenceTime},
 		},
@@ -400,6 +458,62 @@ func TestIssueEvent_Marshal(t *testing.T) {
 			"created_at": ` + referenceTimeStr + `,
 			"suspended_at": ` + referenceTimeStr + `,
 			"url": "u"
+		},
+		"requested_team": {
+			"id": 1,
+			"node_id": "n",
+			"name": "n",
+			"description": "d",
+			"url": "u",
+			"slug": "s",
+			"permission": "p",
+			"privacy": "p",
+			"members_count": 1,
+			"repos_count": 1,
+			"members_url": "m",
+			"repositories_url": "r",
+			"organization": {
+				"login": "l",
+				"id": 1,
+				"node_id": "n",
+				"avatar_url": "a",
+				"html_url": "h",
+				"name": "n",
+				"company": "c",
+				"blog": "b",
+				"location": "l",
+				"email": "e"
+			},
+			"parent": {
+				"id": 1,
+				"node_id": "n",
+				"name": "n",
+				"description": "d",
+				"url": "u",
+				"slug": "s",
+				"permission": "p",
+				"privacy": "p",
+				"members_count": 1,
+				"repos_count": 1
+			},
+			"ldap_dn": "l"
+		},
+		"performed_via_github_app": {
+			"id": 1,
+			"node_id": "n",
+			"owner": {
+				"login": "l",
+				"id": 1,
+				"node_id": "n",
+				"url": "u",
+				"repos_url": "r",
+				"events_url": "e",
+				"avatar_url": "a"
+			},
+			"name": "n",
+			"description": "d",
+			"html_url": "h",
+			"external_url": "u"
 		},
 		"review_requester": {
 			"login": "l",

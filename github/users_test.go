@@ -16,25 +16,26 @@ import (
 )
 
 func TestUser_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &User{}, "{}")
 
 	u := &User{
-		Login:           String("l"),
-		ID:              Int64(1),
-		URL:             String("u"),
-		AvatarURL:       String("a"),
-		GravatarID:      String("g"),
-		Name:            String("n"),
-		Company:         String("c"),
-		Blog:            String("b"),
-		Location:        String("l"),
-		Email:           String("e"),
-		Hireable:        Bool(true),
-		Bio:             String("b"),
-		TwitterUsername: String("t"),
-		PublicRepos:     Int(1),
-		Followers:       Int(1),
-		Following:       Int(1),
+		Login:           Ptr("l"),
+		ID:              Ptr(int64(1)),
+		URL:             Ptr("u"),
+		AvatarURL:       Ptr("a"),
+		GravatarID:      Ptr("g"),
+		Name:            Ptr("n"),
+		Company:         Ptr("c"),
+		Blog:            Ptr("b"),
+		Location:        Ptr("l"),
+		Email:           Ptr("e"),
+		Hireable:        Ptr(true),
+		Bio:             Ptr("b"),
+		TwitterUsername: Ptr("t"),
+		PublicRepos:     Ptr(1),
+		Followers:       Ptr(1),
+		Following:       Ptr(1),
 		CreatedAt:       &Timestamp{referenceTime},
 		SuspendedAt:     &Timestamp{referenceTime},
 	}
@@ -59,11 +60,94 @@ func TestUser_Marshal(t *testing.T) {
 		"url": "u"
 	}`
 	testJSONMarshal(t, u, want)
+
+	u2 := &User{
+		Login:                   Ptr("testLogin"),
+		ID:                      Ptr(int64(1)),
+		NodeID:                  Ptr("testNode123"),
+		AvatarURL:               Ptr("https://www.my-avatar.com"),
+		HTMLURL:                 Ptr("https://www.test-url.com"),
+		GravatarID:              Ptr("testGravatar123"),
+		Name:                    Ptr("myName"),
+		Company:                 Ptr("testCompany"),
+		Blog:                    Ptr("test Blog"),
+		Location:                Ptr("test location"),
+		Email:                   Ptr("test@test.com"),
+		Hireable:                Ptr(true),
+		Bio:                     Ptr("my good bio"),
+		TwitterUsername:         Ptr("https://www.twitter.com/test"),
+		PublicRepos:             Ptr(1),
+		PublicGists:             Ptr(2),
+		Followers:               Ptr(100),
+		Following:               Ptr(29),
+		CreatedAt:               &Timestamp{referenceTime},
+		UpdatedAt:               &Timestamp{referenceTime},
+		SuspendedAt:             &Timestamp{referenceTime},
+		Type:                    Ptr("test type"),
+		SiteAdmin:               Ptr(false),
+		TotalPrivateRepos:       Ptr(int64(2)),
+		OwnedPrivateRepos:       Ptr(int64(1)),
+		PrivateGists:            Ptr(1),
+		DiskUsage:               Ptr(1),
+		Collaborators:           Ptr(1),
+		TwoFactorAuthentication: Ptr(false),
+		Plan: &Plan{
+			Name:          Ptr("silver"),
+			Space:         Ptr(1024),
+			Collaborators: Ptr(10),
+			PrivateRepos:  Ptr(int64(4)),
+			FilledSeats:   Ptr(24),
+			Seats:         Ptr(1),
+		},
+		LdapDn: Ptr("test ldap"),
+	}
+
+	want2 := `{
+		"login": "testLogin",
+		"id": 1,
+		"node_id":"testNode123",
+		"avatar_url": "https://www.my-avatar.com",
+		"html_url":"https://www.test-url.com",
+		"gravatar_id": "testGravatar123",
+		"name": "myName",
+		"company": "testCompany",
+		"blog": "test Blog",
+		"location": "test location",
+		"email": "test@test.com",
+		"hireable": true,
+		"bio": "my good bio",
+		"twitter_username": "https://www.twitter.com/test",
+		"public_repos": 1,
+		"public_gists":2,
+		"followers": 100,
+		"following": 29,
+		"created_at": ` + referenceTimeStr + `,
+		"suspended_at": ` + referenceTimeStr + `,
+		"updated_at": ` + referenceTimeStr + `,
+		"type": "test type",
+		"site_admin": false,
+		"total_private_repos": 2,
+		"owned_private_repos": 1,
+		"private_gists": 1,
+		"disk_usage": 1,
+		"collaborators": 1,
+		"two_factor_authentication": false,
+		"plan": {
+			"name": "silver",
+			"space": 1024,
+			"collaborators": 10,
+			"private_repos": 4,
+			"filled_seats": 24,
+			"seats": 1
+		},
+		"ldap_dn": "test ldap"
+	}`
+	testJSONMarshal(t, u2, want2)
 }
 
 func TestUsersService_Get_authenticatedUser(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -76,7 +160,7 @@ func TestUsersService_Get_authenticatedUser(t *testing.T) {
 		t.Errorf("Users.Get returned error: %v", err)
 	}
 
-	want := &User{ID: Int64(1)}
+	want := &User{ID: Ptr(int64(1))}
 	if !cmp.Equal(user, want) {
 		t.Errorf("Users.Get returned %+v, want %+v", user, want)
 	}
@@ -97,8 +181,8 @@ func TestUsersService_Get_authenticatedUser(t *testing.T) {
 }
 
 func TestUsersService_Get_specifiedUser(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/users/u", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -111,15 +195,15 @@ func TestUsersService_Get_specifiedUser(t *testing.T) {
 		t.Errorf("Users.Get returned error: %v", err)
 	}
 
-	want := &User{ID: Int64(1)}
+	want := &User{ID: Ptr(int64(1))}
 	if !cmp.Equal(user, want) {
 		t.Errorf("Users.Get returned %+v, want %+v", user, want)
 	}
 }
 
 func TestUsersService_Get_invalidUser(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Users.Get(ctx, "%")
@@ -127,8 +211,8 @@ func TestUsersService_Get_invalidUser(t *testing.T) {
 }
 
 func TestUsersService_GetByID(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -141,7 +225,7 @@ func TestUsersService_GetByID(t *testing.T) {
 		t.Fatalf("Users.GetByID returned error: %v", err)
 	}
 
-	want := &User{ID: Int64(1)}
+	want := &User{ID: Ptr(int64(1))}
 	if !cmp.Equal(user, want) {
 		t.Errorf("Users.GetByID returned %+v, want %+v", user, want)
 	}
@@ -162,14 +246,14 @@ func TestUsersService_GetByID(t *testing.T) {
 }
 
 func TestUsersService_Edit(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
-	input := &User{Name: String("n")}
+	input := &User{Name: Ptr("n")}
 
 	mux.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
 		v := new(User)
-		json.NewDecoder(r.Body).Decode(v)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
 
 		testMethod(t, r, "PATCH")
 		if !cmp.Equal(v, input) {
@@ -185,7 +269,7 @@ func TestUsersService_Edit(t *testing.T) {
 		t.Errorf("Users.Edit returned error: %v", err)
 	}
 
-	want := &User{ID: Int64(1)}
+	want := &User{ID: Ptr(int64(1))}
 	if !cmp.Equal(user, want) {
 		t.Errorf("Users.Edit returned %+v, want %+v", user, want)
 	}
@@ -201,8 +285,8 @@ func TestUsersService_Edit(t *testing.T) {
 }
 
 func TestUsersService_GetHovercard(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/users/u/hovercard", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -217,7 +301,7 @@ func TestUsersService_GetHovercard(t *testing.T) {
 		t.Errorf("Users.GetHovercard returned error: %v", err)
 	}
 
-	want := &Hovercard{Contexts: []*UserContext{{Message: String("Owns this repository"), Octicon: String("repo")}}}
+	want := &Hovercard{Contexts: []*UserContext{{Message: Ptr("Owns this repository"), Octicon: Ptr("repo")}}}
 	if !cmp.Equal(hovercard, want) {
 		t.Errorf("Users.GetHovercard returned %+v, want %+v", hovercard, want)
 	}
@@ -238,8 +322,8 @@ func TestUsersService_GetHovercard(t *testing.T) {
 }
 
 func TestUsersService_ListAll(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/users", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -254,7 +338,7 @@ func TestUsersService_ListAll(t *testing.T) {
 		t.Errorf("Users.Get returned error: %v", err)
 	}
 
-	want := []*User{{ID: Int64(2)}}
+	want := []*User{{ID: Ptr(int64(2))}}
 	if !cmp.Equal(users, want) {
 		t.Errorf("Users.ListAll returned %+v, want %+v", users, want)
 	}
@@ -270,8 +354,8 @@ func TestUsersService_ListAll(t *testing.T) {
 }
 
 func TestUsersService_ListInvitations(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/repository_invitations", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -284,7 +368,7 @@ func TestUsersService_ListInvitations(t *testing.T) {
 		t.Errorf("Users.ListInvitations returned error: %v", err)
 	}
 
-	want := []*RepositoryInvitation{{ID: Int64(1)}, {ID: Int64(2)}}
+	want := []*RepositoryInvitation{{ID: Ptr(int64(1))}, {ID: Ptr(int64(2))}}
 	if !cmp.Equal(got, want) {
 		t.Errorf("Users.ListInvitations = %+v, want %+v", got, want)
 	}
@@ -300,8 +384,8 @@ func TestUsersService_ListInvitations(t *testing.T) {
 }
 
 func TestUsersService_ListInvitations_withOptions(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/repository_invitations", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -319,8 +403,8 @@ func TestUsersService_ListInvitations_withOptions(t *testing.T) {
 }
 
 func TestUsersService_AcceptInvitation(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/repository_invitations/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "PATCH")
@@ -344,8 +428,8 @@ func TestUsersService_AcceptInvitation(t *testing.T) {
 }
 
 func TestUsersService_DeclineInvitation(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/user/repository_invitations/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -366,4 +450,84 @@ func TestUsersService_DeclineInvitation(t *testing.T) {
 	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
 		return client.Users.DeclineInvitation(ctx, 1)
 	})
+}
+
+func TestUserContext_Marshal(t *testing.T) {
+	t.Parallel()
+	testJSONMarshal(t, &UserContext{}, "{}")
+
+	u := &UserContext{
+		Message: Ptr("message"),
+		Octicon: Ptr("message"),
+	}
+
+	want := `{
+		"message" : "message",
+		"octicon" : "message"
+	}`
+
+	testJSONMarshal(t, u, want)
+}
+
+func TestHovercard_Marshal(t *testing.T) {
+	t.Parallel()
+	testJSONMarshal(t, &Hovercard{}, "{}")
+
+	h := &Hovercard{
+		Contexts: []*UserContext{
+			{
+				Message: Ptr("someMessage"),
+				Octicon: Ptr("someOcticon"),
+			},
+		},
+	}
+
+	want := `{
+		"contexts" : [
+			{
+				"message" : "someMessage",
+				"octicon" : "someOcticon"
+			}
+		]
+	}`
+
+	testJSONMarshal(t, h, want)
+}
+
+func TestUserListOptions_Marshal(t *testing.T) {
+	t.Parallel()
+	testJSONMarshal(t, &UserListOptions{}, "{}")
+
+	u := &UserListOptions{
+		Since: int64(1900),
+		ListOptions: ListOptions{
+			Page:    int(1),
+			PerPage: int(10),
+		},
+	}
+
+	want := `{
+		"since" : 1900,
+		"page": 1,
+		"perPage": 10
+	}`
+
+	testJSONMarshal(t, u, want)
+}
+
+func TestHovercardOptions_Marshal(t *testing.T) {
+	t.Parallel()
+	testJSONMarshal(t, &HovercardOptions{}, "{}")
+
+	u := &HovercardOptions{
+		SubjectType: "subjectType",
+		SubjectID:   "subjectID",
+	}
+
+	want := `{
+		"SubjectType" : "subjectType",
+		"SubjectID" : "subjectID"
+	}`
+
+	testJSONMarshal(t, u, want)
 }

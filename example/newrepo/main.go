@@ -16,14 +16,14 @@ import (
 	"log"
 	"os"
 
-	"github.com/google/go-github/v38/github"
-	"golang.org/x/oauth2"
+	"github.com/google/go-github/v68/github"
 )
 
 var (
 	name        = flag.String("name", "", "Name of repo to create in authenticated user's GitHub account.")
 	description = flag.String("description", "", "Description of created repo.")
 	private     = flag.Bool("private", false, "Will created repo be private.")
+	autoInit    = flag.Bool("auto-init", false, "Pass true to create an initial commit with empty README.")
 )
 
 func main() {
@@ -36,11 +36,9 @@ func main() {
 		log.Fatal("No name: New repos must be given a name")
 	}
 	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
+	client := github.NewClient(nil).WithAuthToken(token)
 
-	r := &github.Repository{Name: name, Private: private, Description: description}
+	r := &github.Repository{Name: name, Private: private, Description: description, AutoInit: autoInit}
 	repo, _, err := client.Repositories.Create(ctx, "", r)
 	if err != nil {
 		log.Fatal(err)

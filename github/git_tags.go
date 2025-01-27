@@ -35,7 +35,9 @@ type createTagRequest struct {
 
 // GetTag fetches a tag from a repo given a SHA.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#get-a-tag
+// GitHub API docs: https://docs.github.com/rest/git/tags#get-a-tag
+//
+//meta:operation GET /repos/{owner}/{repo}/git/tags/{tag_sha}
 func (s *GitService) GetTag(ctx context.Context, owner string, repo string, sha string) (*Tag, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/git/tags/%v", owner, repo, sha)
 	req, err := s.client.NewRequest("GET", u, nil)
@@ -45,12 +47,18 @@ func (s *GitService) GetTag(ctx context.Context, owner string, repo string, sha 
 
 	tag := new(Tag)
 	resp, err := s.client.Do(ctx, req, tag)
-	return tag, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return tag, resp, nil
 }
 
 // CreateTag creates a tag object.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/git/#create-a-tag-object
+// GitHub API docs: https://docs.github.com/rest/git/tags#create-a-tag-object
+//
+//meta:operation POST /repos/{owner}/{repo}/git/tags
 func (s *GitService) CreateTag(ctx context.Context, owner string, repo string, tag *Tag) (*Tag, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/git/tags", owner, repo)
 
@@ -72,5 +80,9 @@ func (s *GitService) CreateTag(ctx context.Context, owner string, repo string, t
 
 	t := new(Tag)
 	resp, err := s.client.Do(ctx, req, t)
-	return t, resp, err
+	if err != nil {
+		return nil, resp, err
+	}
+
+	return t, resp, nil
 }

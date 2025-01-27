@@ -18,8 +18,8 @@ type IssueComment struct {
 	Body      *string    `json:"body,omitempty"`
 	User      *User      `json:"user,omitempty"`
 	Reactions *Reactions `json:"reactions,omitempty"`
-	CreatedAt *time.Time `json:"created_at,omitempty"`
-	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+	CreatedAt *Timestamp `json:"created_at,omitempty"`
+	UpdatedAt *Timestamp `json:"updated_at,omitempty"`
 	// AuthorAssociation is the comment author's relationship to the issue's repository.
 	// Possible values are "COLLABORATOR", "CONTRIBUTOR", "FIRST_TIMER", "FIRST_TIME_CONTRIBUTOR", "MEMBER", "OWNER", or "NONE".
 	AuthorAssociation *string `json:"author_association,omitempty"`
@@ -50,8 +50,11 @@ type IssueListCommentsOptions struct {
 // ListComments lists all comments on the specified issue. Specifying an issue
 // number of 0 will return all comments on all issues for the repository.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/issues/#list-issue-comments
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/issues/#list-issue-comments-for-a-repository
+// GitHub API docs: https://docs.github.com/rest/issues/comments#list-issue-comments
+// GitHub API docs: https://docs.github.com/rest/issues/comments#list-issue-comments-for-a-repository
+//
+//meta:operation GET /repos/{owner}/{repo}/issues/comments
+//meta:operation GET /repos/{owner}/{repo}/issues/{issue_number}/comments
 func (s *IssuesService) ListComments(ctx context.Context, owner string, repo string, number int, opts *IssueListCommentsOptions) ([]*IssueComment, *Response, error) {
 	var u string
 	if number == 0 {
@@ -83,7 +86,9 @@ func (s *IssuesService) ListComments(ctx context.Context, owner string, repo str
 
 // GetComment fetches the specified issue comment.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/issues/#get-an-issue-comment
+// GitHub API docs: https://docs.github.com/rest/issues/comments#get-an-issue-comment
+//
+//meta:operation GET /repos/{owner}/{repo}/issues/comments/{comment_id}
 func (s *IssuesService) GetComment(ctx context.Context, owner string, repo string, commentID int64) (*IssueComment, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/issues/comments/%d", owner, repo, commentID)
 
@@ -106,7 +111,9 @@ func (s *IssuesService) GetComment(ctx context.Context, owner string, repo strin
 
 // CreateComment creates a new comment on the specified issue.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/issues/#create-an-issue-comment
+// GitHub API docs: https://docs.github.com/rest/issues/comments#create-an-issue-comment
+//
+//meta:operation POST /repos/{owner}/{repo}/issues/{issue_number}/comments
 func (s *IssuesService) CreateComment(ctx context.Context, owner string, repo string, number int, comment *IssueComment) (*IssueComment, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/issues/%d/comments", owner, repo, number)
 	req, err := s.client.NewRequest("POST", u, comment)
@@ -125,7 +132,9 @@ func (s *IssuesService) CreateComment(ctx context.Context, owner string, repo st
 // EditComment updates an issue comment.
 // A non-nil comment.Body must be provided. Other comment fields should be left nil.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/issues/#update-an-issue-comment
+// GitHub API docs: https://docs.github.com/rest/issues/comments#update-an-issue-comment
+//
+//meta:operation PATCH /repos/{owner}/{repo}/issues/comments/{comment_id}
 func (s *IssuesService) EditComment(ctx context.Context, owner string, repo string, commentID int64, comment *IssueComment) (*IssueComment, *Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/issues/comments/%d", owner, repo, commentID)
 	req, err := s.client.NewRequest("PATCH", u, comment)
@@ -143,7 +152,9 @@ func (s *IssuesService) EditComment(ctx context.Context, owner string, repo stri
 
 // DeleteComment deletes an issue comment.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/issues/#delete-an-issue-comment
+// GitHub API docs: https://docs.github.com/rest/issues/comments#delete-an-issue-comment
+//
+//meta:operation DELETE /repos/{owner}/{repo}/issues/comments/{comment_id}
 func (s *IssuesService) DeleteComment(ctx context.Context, owner string, repo string, commentID int64) (*Response, error) {
 	u := fmt.Sprintf("repos/%v/%v/issues/comments/%d", owner, repo, commentID)
 	req, err := s.client.NewRequest("DELETE", u, nil)

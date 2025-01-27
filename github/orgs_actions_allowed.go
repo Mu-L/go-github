@@ -7,52 +7,28 @@ package github
 
 import (
 	"context"
-	"fmt"
 )
-
-// ActionsAllowed represents selected actions that are allowed in an organization.
-//
-// GitHub API docs: https://docs.github.com/en/rest/reference/actions#get-allowed-actions-for-an-organization
-type ActionsAllowed struct {
-	GithubOwnedAllowed *bool    `json:"github_owned_allowed,omitempty"`
-	VerifiedAllowed    *bool    `json:"verified_allowed,omitempty"`
-	PatternsAllowed    []string `json:"patterns_allowed,omitempty"`
-}
-
-func (a ActionsAllowed) String() string {
-	return Stringify(a)
-}
 
 // GetActionsAllowed gets the actions that are allowed in an organization.
 //
-// GitHub API docs: https://docs.github.com/en/rest/reference/actions#get-allowed-actions-for-an-organization
+// Deprecated: please use `client.Actions.GetActionsAllowed` instead.
+//
+// GitHub API docs: https://docs.github.com/rest/actions/permissions#get-allowed-actions-and-reusable-workflows-for-an-organization
+//
+//meta:operation GET /orgs/{org}/actions/permissions/selected-actions
 func (s *OrganizationsService) GetActionsAllowed(ctx context.Context, org string) (*ActionsAllowed, *Response, error) {
-	u := fmt.Sprintf("orgs/%v/actions/permissions/selected-actions", org)
-
-	req, err := s.client.NewRequest("GET", u, nil)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	actionsAllowed := new(ActionsAllowed)
-	resp, err := s.client.Do(ctx, req, actionsAllowed)
-	if err != nil {
-		return nil, resp, err
-	}
-
-	return actionsAllowed, resp, nil
+	s2 := (*ActionsService)(s)
+	return s2.GetActionsAllowed(ctx, org)
 }
 
 // EditActionsAllowed sets the actions that are allowed in an organization.
 //
-// GitHub API docs: https://docs.github.com/en/rest/reference/actions#set-allowed-actions-for-an-organization
+// Deprecated: please use `client.Actions.EditActionsAllowed` instead.
+//
+// GitHub API docs: https://docs.github.com/rest/actions/permissions#set-allowed-actions-and-reusable-workflows-for-an-organization
+//
+//meta:operation PUT /orgs/{org}/actions/permissions/selected-actions
 func (s *OrganizationsService) EditActionsAllowed(ctx context.Context, org string, actionsAllowed ActionsAllowed) (*ActionsAllowed, *Response, error) {
-	u := fmt.Sprintf("orgs/%v/actions/permissions/selected-actions", org)
-	req, err := s.client.NewRequest("PUT", u, actionsAllowed)
-	if err != nil {
-		return nil, nil, err
-	}
-	p := new(ActionsAllowed)
-	resp, err := s.client.Do(ctx, req, p)
-	return p, resp, err
+	s2 := (*ActionsService)(s)
+	return s2.EditActionsAllowed(ctx, org, actionsAllowed)
 }

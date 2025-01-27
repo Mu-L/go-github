@@ -7,6 +7,7 @@ package github
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -16,8 +17,8 @@ import (
 )
 
 func TestActionsService_ListRunnerApplicationDownloads(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/runners/downloads", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -31,11 +32,11 @@ func TestActionsService_ListRunnerApplicationDownloads(t *testing.T) {
 	}
 
 	want := []*RunnerApplicationDownload{
-		{OS: String("osx"), Architecture: String("x64"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-osx-x64-2.164.0.tar.gz"), Filename: String("actions-runner-osx-x64-2.164.0.tar.gz")},
-		{OS: String("linux"), Architecture: String("x64"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-x64-2.164.0.tar.gz"), Filename: String("actions-runner-linux-x64-2.164.0.tar.gz")},
-		{OS: String("linux"), Architecture: String("arm"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-arm-2.164.0.tar.gz"), Filename: String("actions-runner-linux-arm-2.164.0.tar.gz")},
-		{OS: String("win"), Architecture: String("x64"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-win-x64-2.164.0.zip"), Filename: String("actions-runner-win-x64-2.164.0.zip")},
-		{OS: String("linux"), Architecture: String("arm64"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-arm64-2.164.0.tar.gz"), Filename: String("actions-runner-linux-arm64-2.164.0.tar.gz")},
+		{OS: Ptr("osx"), Architecture: Ptr("x64"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-osx-x64-2.164.0.tar.gz"), Filename: Ptr("actions-runner-osx-x64-2.164.0.tar.gz")},
+		{OS: Ptr("linux"), Architecture: Ptr("x64"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-x64-2.164.0.tar.gz"), Filename: Ptr("actions-runner-linux-x64-2.164.0.tar.gz")},
+		{OS: Ptr("linux"), Architecture: Ptr("arm"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-arm-2.164.0.tar.gz"), Filename: Ptr("actions-runner-linux-arm-2.164.0.tar.gz")},
+		{OS: Ptr("win"), Architecture: Ptr("x64"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-win-x64-2.164.0.zip"), Filename: Ptr("actions-runner-win-x64-2.164.0.zip")},
+		{OS: Ptr("linux"), Architecture: Ptr("arm64"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-arm64-2.164.0.tar.gz"), Filename: Ptr("actions-runner-linux-arm64-2.164.0.tar.gz")},
 	}
 	if !cmp.Equal(downloads, want) {
 		t.Errorf("Actions.ListRunnerApplicationDownloads returned %+v, want %+v", downloads, want)
@@ -56,9 +57,97 @@ func TestActionsService_ListRunnerApplicationDownloads(t *testing.T) {
 	})
 }
 
+func TestActionsService_GenerateOrgJITConfig(t *testing.T) {
+	t.Parallel()
+	client, mux, _ := setup(t)
+
+	input := &GenerateJITConfigRequest{Name: "test", RunnerGroupID: 1, Labels: []string{"one", "two"}}
+
+	mux.HandleFunc("/orgs/o/actions/runners/generate-jitconfig", func(w http.ResponseWriter, r *http.Request) {
+		v := new(GenerateJITConfigRequest)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
+
+		testMethod(t, r, "POST")
+		if !cmp.Equal(v, input) {
+			t.Errorf("Request body = %+v, want %+v", v, input)
+		}
+
+		fmt.Fprint(w, `{"encoded_jit_config":"foo"}`)
+	})
+
+	ctx := context.Background()
+	jitConfig, _, err := client.Actions.GenerateOrgJITConfig(ctx, "o", input)
+	if err != nil {
+		t.Errorf("Actions.GenerateOrgJITConfig returned error: %v", err)
+	}
+
+	want := &JITRunnerConfig{EncodedJITConfig: Ptr("foo")}
+	if !cmp.Equal(jitConfig, want) {
+		t.Errorf("Actions.GenerateOrgJITConfig returned %+v, want %+v", jitConfig, want)
+	}
+
+	const methodName = "GenerateOrgJITConfig"
+	testBadOptions(t, methodName, func() (err error) {
+		_, _, err = client.Actions.GenerateOrgJITConfig(ctx, "\n", input)
+		return err
+	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Actions.GenerateOrgJITConfig(ctx, "o", input)
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
+}
+
+func TestActionsService_GenerateRepoJITConfig(t *testing.T) {
+	t.Parallel()
+	client, mux, _ := setup(t)
+
+	input := &GenerateJITConfigRequest{Name: "test", RunnerGroupID: 1, Labels: []string{"one", "two"}}
+
+	mux.HandleFunc("/repos/o/r/actions/runners/generate-jitconfig", func(w http.ResponseWriter, r *http.Request) {
+		v := new(GenerateJITConfigRequest)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
+
+		testMethod(t, r, "POST")
+		if !cmp.Equal(v, input) {
+			t.Errorf("Request body = %+v, want %+v", v, input)
+		}
+
+		fmt.Fprint(w, `{"encoded_jit_config":"foo"}`)
+	})
+
+	ctx := context.Background()
+	jitConfig, _, err := client.Actions.GenerateRepoJITConfig(ctx, "o", "r", input)
+	if err != nil {
+		t.Errorf("Actions.GenerateRepoJITConfig returned error: %v", err)
+	}
+
+	want := &JITRunnerConfig{EncodedJITConfig: Ptr("foo")}
+	if !cmp.Equal(jitConfig, want) {
+		t.Errorf("Actions.GenerateRepoJITConfig returned %+v, want %+v", jitConfig, want)
+	}
+
+	const methodName = "GenerateRepoJITConfig"
+	testBadOptions(t, methodName, func() (err error) {
+		_, _, err = client.Actions.GenerateRepoJITConfig(ctx, "\n", "\n", input)
+		return err
+	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Actions.GenerateRepoJITConfig(ctx, "o", "r", input)
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
+}
+
 func TestActionsService_CreateRegistrationToken(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/runners/registration-token", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
@@ -71,7 +160,7 @@ func TestActionsService_CreateRegistrationToken(t *testing.T) {
 		t.Errorf("Actions.CreateRegistrationToken returned error: %v", err)
 	}
 
-	want := &RegistrationToken{Token: String("LLBF3JGZDX3P5PMEXLND6TS6FCWO6"),
+	want := &RegistrationToken{Token: Ptr("LLBF3JGZDX3P5PMEXLND6TS6FCWO6"),
 		ExpiresAt: &Timestamp{time.Date(2020, time.January, 22, 12, 13, 35,
 			123000000, time.UTC)}}
 	if !cmp.Equal(token, want) {
@@ -94,16 +183,19 @@ func TestActionsService_CreateRegistrationToken(t *testing.T) {
 }
 
 func TestActionsService_ListRunners(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/runners", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
-		testFormValues(t, r, values{"per_page": "2", "page": "2"})
-		fmt.Fprint(w, `{"total_count":2,"runners":[{"id":23,"name":"MBP","os":"macos","status":"online"},{"id":24,"name":"iMac","os":"macos","status":"offline"}]}`)
+		testFormValues(t, r, values{"name": "MBP", "per_page": "2", "page": "2"})
+		fmt.Fprint(w, `{"total_count":1,"runners":[{"id":23,"name":"MBP","os":"macos","status":"online"}]}`)
 	})
 
-	opts := &ListOptions{Page: 2, PerPage: 2}
+	opts := &ListRunnersOptions{
+		Name:        Ptr("MBP"),
+		ListOptions: ListOptions{Page: 2, PerPage: 2},
+	}
 	ctx := context.Background()
 	runners, _, err := client.Actions.ListRunners(ctx, "o", "r", opts)
 	if err != nil {
@@ -111,10 +203,9 @@ func TestActionsService_ListRunners(t *testing.T) {
 	}
 
 	want := &Runners{
-		TotalCount: 2,
+		TotalCount: 1,
 		Runners: []*Runner{
-			{ID: Int64(23), Name: String("MBP"), OS: String("macos"), Status: String("online")},
-			{ID: Int64(24), Name: String("iMac"), OS: String("macos"), Status: String("offline")},
+			{ID: Ptr(int64(23)), Name: Ptr("MBP"), OS: Ptr("macos"), Status: Ptr("online")},
 		},
 	}
 	if !cmp.Equal(runners, want) {
@@ -137,8 +228,8 @@ func TestActionsService_ListRunners(t *testing.T) {
 }
 
 func TestActionsService_GetRunner(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/runners/23", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -152,10 +243,10 @@ func TestActionsService_GetRunner(t *testing.T) {
 	}
 
 	want := &Runner{
-		ID:     Int64(23),
-		Name:   String("MBP"),
-		OS:     String("macos"),
-		Status: String("online"),
+		ID:     Ptr(int64(23)),
+		Name:   Ptr("MBP"),
+		OS:     Ptr("macos"),
+		Status: Ptr("online"),
 	}
 	if !cmp.Equal(runner, want) {
 		t.Errorf("Actions.GetRunner returned %+v, want %+v", runner, want)
@@ -177,8 +268,8 @@ func TestActionsService_GetRunner(t *testing.T) {
 }
 
 func TestActionsService_CreateRemoveToken(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/runners/remove-token", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
@@ -191,7 +282,7 @@ func TestActionsService_CreateRemoveToken(t *testing.T) {
 		t.Errorf("Actions.CreateRemoveToken returned error: %v", err)
 	}
 
-	want := &RemoveToken{Token: String("AABF3JGZDX3P5PMEXLND6TS6FCWO6"), ExpiresAt: &Timestamp{time.Date(2020, time.January, 29, 12, 13, 35, 123000000, time.UTC)}}
+	want := &RemoveToken{Token: Ptr("AABF3JGZDX3P5PMEXLND6TS6FCWO6"), ExpiresAt: &Timestamp{time.Date(2020, time.January, 29, 12, 13, 35, 123000000, time.UTC)}}
 	if !cmp.Equal(token, want) {
 		t.Errorf("Actions.CreateRemoveToken returned %+v, want %+v", token, want)
 	}
@@ -212,8 +303,8 @@ func TestActionsService_CreateRemoveToken(t *testing.T) {
 }
 
 func TestActionsService_RemoveRunner(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/actions/runners/21", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -237,8 +328,8 @@ func TestActionsService_RemoveRunner(t *testing.T) {
 }
 
 func TestActionsService_ListOrganizationRunnerApplicationDownloads(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/runners/downloads", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -252,11 +343,11 @@ func TestActionsService_ListOrganizationRunnerApplicationDownloads(t *testing.T)
 	}
 
 	want := []*RunnerApplicationDownload{
-		{OS: String("osx"), Architecture: String("x64"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-osx-x64-2.164.0.tar.gz"), Filename: String("actions-runner-osx-x64-2.164.0.tar.gz")},
-		{OS: String("linux"), Architecture: String("x64"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-x64-2.164.0.tar.gz"), Filename: String("actions-runner-linux-x64-2.164.0.tar.gz")},
-		{OS: String("linux"), Architecture: String("arm"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-arm-2.164.0.tar.gz"), Filename: String("actions-runner-linux-arm-2.164.0.tar.gz")},
-		{OS: String("win"), Architecture: String("x64"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-win-x64-2.164.0.zip"), Filename: String("actions-runner-win-x64-2.164.0.zip")},
-		{OS: String("linux"), Architecture: String("arm64"), DownloadURL: String("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-arm64-2.164.0.tar.gz"), Filename: String("actions-runner-linux-arm64-2.164.0.tar.gz")},
+		{OS: Ptr("osx"), Architecture: Ptr("x64"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-osx-x64-2.164.0.tar.gz"), Filename: Ptr("actions-runner-osx-x64-2.164.0.tar.gz")},
+		{OS: Ptr("linux"), Architecture: Ptr("x64"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-x64-2.164.0.tar.gz"), Filename: Ptr("actions-runner-linux-x64-2.164.0.tar.gz")},
+		{OS: Ptr("linux"), Architecture: Ptr("arm"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-arm-2.164.0.tar.gz"), Filename: Ptr("actions-runner-linux-arm-2.164.0.tar.gz")},
+		{OS: Ptr("win"), Architecture: Ptr("x64"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-win-x64-2.164.0.zip"), Filename: Ptr("actions-runner-win-x64-2.164.0.zip")},
+		{OS: Ptr("linux"), Architecture: Ptr("arm64"), DownloadURL: Ptr("https://github.com/actions/runner/releases/download/v2.164.0/actions-runner-linux-arm64-2.164.0.tar.gz"), Filename: Ptr("actions-runner-linux-arm64-2.164.0.tar.gz")},
 	}
 	if !cmp.Equal(downloads, want) {
 		t.Errorf("Actions.ListOrganizationRunnerApplicationDownloads returned %+v, want %+v", downloads, want)
@@ -278,8 +369,8 @@ func TestActionsService_ListOrganizationRunnerApplicationDownloads(t *testing.T)
 }
 
 func TestActionsService_CreateOrganizationRegistrationToken(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/runners/registration-token", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
@@ -292,7 +383,7 @@ func TestActionsService_CreateOrganizationRegistrationToken(t *testing.T) {
 		t.Errorf("Actions.CreateRegistrationToken returned error: %v", err)
 	}
 
-	want := &RegistrationToken{Token: String("LLBF3JGZDX3P5PMEXLND6TS6FCWO6"),
+	want := &RegistrationToken{Token: Ptr("LLBF3JGZDX3P5PMEXLND6TS6FCWO6"),
 		ExpiresAt: &Timestamp{time.Date(2020, time.January, 22, 12, 13, 35,
 			123000000, time.UTC)}}
 	if !cmp.Equal(token, want) {
@@ -315,8 +406,8 @@ func TestActionsService_CreateOrganizationRegistrationToken(t *testing.T) {
 }
 
 func TestActionsService_ListOrganizationRunners(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/runners", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -324,7 +415,9 @@ func TestActionsService_ListOrganizationRunners(t *testing.T) {
 		fmt.Fprint(w, `{"total_count":2,"runners":[{"id":23,"name":"MBP","os":"macos","status":"online"},{"id":24,"name":"iMac","os":"macos","status":"offline"}]}`)
 	})
 
-	opts := &ListOptions{Page: 2, PerPage: 2}
+	opts := &ListRunnersOptions{
+		ListOptions: ListOptions{Page: 2, PerPage: 2},
+	}
 	ctx := context.Background()
 	runners, _, err := client.Actions.ListOrganizationRunners(ctx, "o", opts)
 	if err != nil {
@@ -334,8 +427,8 @@ func TestActionsService_ListOrganizationRunners(t *testing.T) {
 	want := &Runners{
 		TotalCount: 2,
 		Runners: []*Runner{
-			{ID: Int64(23), Name: String("MBP"), OS: String("macos"), Status: String("online")},
-			{ID: Int64(24), Name: String("iMac"), OS: String("macos"), Status: String("offline")},
+			{ID: Ptr(int64(23)), Name: Ptr("MBP"), OS: Ptr("macos"), Status: Ptr("online")},
+			{ID: Ptr(int64(24)), Name: Ptr("iMac"), OS: Ptr("macos"), Status: Ptr("offline")},
 		},
 	}
 	if !cmp.Equal(runners, want) {
@@ -357,136 +450,9 @@ func TestActionsService_ListOrganizationRunners(t *testing.T) {
 	})
 }
 
-func TestActionsService_ListEnabledReposInOrg(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
-
-	mux.HandleFunc("/orgs/o/actions/permissions/repositories", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "GET")
-		testFormValues(t, r, values{
-			"page": "1",
-		})
-		fmt.Fprint(w, `{"total_count":2,"repositories":[{"id":2}, {"id": 3}]}`)
-	})
-
-	ctx := context.Background()
-	opt := &ListOptions{
-		Page: 1,
-	}
-	got, _, err := client.Actions.ListEnabledReposInOrg(ctx, "o", opt)
-	if err != nil {
-		t.Errorf("Actions.ListEnabledReposInOrg returned error: %v", err)
-	}
-
-	want := &ActionsEnabledOnOrgRepos{TotalCount: int(2), Repositories: []*Repository{
-		{ID: Int64(2)},
-		{ID: Int64(3)},
-	}}
-	if !cmp.Equal(got, want) {
-		t.Errorf("Actions.ListEnabledReposInOrg returned %+v, want %+v", got, want)
-	}
-
-	const methodName = "ListEnabledReposInOrg"
-	testBadOptions(t, methodName, func() (err error) {
-		_, _, err = client.Actions.ListEnabledReposInOrg(ctx, "\n", opt)
-		return err
-	})
-
-	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
-		got, resp, err := client.Actions.ListEnabledReposInOrg(ctx, "o", opt)
-		if got != nil {
-			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
-		}
-		return resp, err
-	})
-}
-
-func TestActionsService_SetEnabledReposInOrg(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
-
-	mux.HandleFunc("/orgs/o/actions/permissions/repositories", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "PUT")
-		testHeader(t, r, "Content-Type", "application/json")
-		testBody(t, r, `{"selected_repository_ids":[123,1234]}`+"\n")
-		w.WriteHeader(http.StatusNoContent)
-	})
-
-	ctx := context.Background()
-	_, err := client.Actions.SetEnabledReposInOrg(ctx, "o", []int64{123, 1234})
-	if err != nil {
-		t.Errorf("Actions.SetEnabledReposInOrg returned error: %v", err)
-	}
-
-	const methodName = "SetEnabledReposInOrg"
-
-	testBadOptions(t, methodName, func() (err error) {
-		_, err = client.Actions.SetEnabledReposInOrg(ctx, "\n", []int64{123, 1234})
-		return err
-	})
-
-	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
-		return client.Actions.SetEnabledReposInOrg(ctx, "o", []int64{123, 1234})
-	})
-}
-
-func TestActionsService_AddEnabledReposInOrg(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
-
-	mux.HandleFunc("/orgs/o/actions/permissions/repositories/123", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "PUT")
-		w.WriteHeader(http.StatusNoContent)
-	})
-
-	ctx := context.Background()
-	_, err := client.Actions.AddEnabledReposInOrg(ctx, "o", 123)
-	if err != nil {
-		t.Errorf("Actions.AddEnabledReposInOrg returned error: %v", err)
-	}
-
-	const methodName = "AddEnabledReposInOrg"
-
-	testBadOptions(t, methodName, func() (err error) {
-		_, err = client.Actions.AddEnabledReposInOrg(ctx, "\n", 123)
-		return err
-	})
-
-	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
-		return client.Actions.AddEnabledReposInOrg(ctx, "o", 123)
-	})
-}
-
-func TestActionsService_RemoveEnabledRepoInOrg(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
-
-	mux.HandleFunc("/orgs/o/actions/permissions/repositories/123", func(w http.ResponseWriter, r *http.Request) {
-		testMethod(t, r, "DELETE")
-		w.WriteHeader(http.StatusNoContent)
-	})
-
-	ctx := context.Background()
-	_, err := client.Actions.RemoveEnabledRepoInOrg(ctx, "o", 123)
-	if err != nil {
-		t.Errorf("Actions.RemoveEnabledRepoInOrg returned error: %v", err)
-	}
-
-	const methodName = "RemoveEnabledRepoInOrg"
-
-	testBadOptions(t, methodName, func() (err error) {
-		_, err = client.Actions.RemoveEnabledRepoInOrg(ctx, "\n", 123)
-		return err
-	})
-
-	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
-		return client.Actions.RemoveEnabledRepoInOrg(ctx, "o", 123)
-	})
-}
-
 func TestActionsService_GetOrganizationRunner(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/runners/23", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -500,10 +466,10 @@ func TestActionsService_GetOrganizationRunner(t *testing.T) {
 	}
 
 	want := &Runner{
-		ID:     Int64(23),
-		Name:   String("MBP"),
-		OS:     String("macos"),
-		Status: String("online"),
+		ID:     Ptr(int64(23)),
+		Name:   Ptr("MBP"),
+		OS:     Ptr("macos"),
+		Status: Ptr("online"),
 	}
 	if !cmp.Equal(runner, want) {
 		t.Errorf("Actions.GetRunner returned %+v, want %+v", runner, want)
@@ -525,8 +491,8 @@ func TestActionsService_GetOrganizationRunner(t *testing.T) {
 }
 
 func TestActionsService_CreateOrganizationRemoveToken(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/runners/remove-token", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "POST")
@@ -539,7 +505,7 @@ func TestActionsService_CreateOrganizationRemoveToken(t *testing.T) {
 		t.Errorf("Actions.CreateRemoveToken returned error: %v", err)
 	}
 
-	want := &RemoveToken{Token: String("AABF3JGZDX3P5PMEXLND6TS6FCWO6"), ExpiresAt: &Timestamp{time.Date(2020, time.January, 29, 12, 13, 35, 123000000, time.UTC)}}
+	want := &RemoveToken{Token: Ptr("AABF3JGZDX3P5PMEXLND6TS6FCWO6"), ExpiresAt: &Timestamp{time.Date(2020, time.January, 29, 12, 13, 35, 123000000, time.UTC)}}
 	if !cmp.Equal(token, want) {
 		t.Errorf("Actions.CreateRemoveToken returned %+v, want %+v", token, want)
 	}
@@ -560,8 +526,8 @@ func TestActionsService_CreateOrganizationRemoveToken(t *testing.T) {
 }
 
 func TestActionsService_RemoveOrganizationRunner(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/actions/runners/21", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -570,7 +536,7 @@ func TestActionsService_RemoveOrganizationRunner(t *testing.T) {
 	ctx := context.Background()
 	_, err := client.Actions.RemoveOrganizationRunner(ctx, "o", 21)
 	if err != nil {
-		t.Errorf("Actions.RemoveOganizationRunner returned error: %v", err)
+		t.Errorf("Actions.RemoveOrganizationRunner returned error: %v", err)
 	}
 
 	const methodName = "RemoveOrganizationRunner"
@@ -585,15 +551,16 @@ func TestActionsService_RemoveOrganizationRunner(t *testing.T) {
 }
 
 func TestRunnerApplicationDownload_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &RunnerApplicationDownload{}, "{}")
 
 	u := &RunnerApplicationDownload{
-		OS:                String("o"),
-		Architecture:      String("a"),
-		DownloadURL:       String("d"),
-		Filename:          String("f"),
-		TempDownloadToken: String("t"),
-		SHA256Checksum:    String("s"),
+		OS:                Ptr("o"),
+		Architecture:      Ptr("a"),
+		DownloadURL:       Ptr("d"),
+		Filename:          Ptr("f"),
+		TempDownloadToken: Ptr("t"),
+		SHA256Checksum:    Ptr("s"),
 	}
 
 	want := `{
@@ -609,15 +576,16 @@ func TestRunnerApplicationDownload_Marshal(t *testing.T) {
 }
 
 func TestActionsEnabledOnOrgRepos_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &ActionsEnabledOnOrgRepos{}, "{}")
 
 	u := &ActionsEnabledOnOrgRepos{
 		TotalCount: 1,
 		Repositories: []*Repository{
 			{
-				ID:   Int64(1),
-				URL:  String("u"),
-				Name: String("n"),
+				ID:   Ptr(int64(1)),
+				URL:  Ptr("u"),
+				Name: Ptr("n"),
 			},
 		},
 	}
@@ -637,10 +605,11 @@ func TestActionsEnabledOnOrgRepos_Marshal(t *testing.T) {
 }
 
 func TestRegistrationToken_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &RegistrationToken{}, "{}")
 
 	u := &RegistrationToken{
-		Token:     String("t"),
+		Token:     Ptr("t"),
 		ExpiresAt: &Timestamp{referenceTime},
 	}
 
@@ -653,12 +622,13 @@ func TestRegistrationToken_Marshal(t *testing.T) {
 }
 
 func TestRunnerLabels_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &RunnerLabels{}, "{}")
 
 	u := &RunnerLabels{
-		ID:   Int64(1),
-		Name: String("n"),
-		Type: String("t"),
+		ID:   Ptr(int64(1)),
+		Name: Ptr("n"),
+		Type: Ptr("t"),
 	}
 
 	want := `{
@@ -671,19 +641,20 @@ func TestRunnerLabels_Marshal(t *testing.T) {
 }
 
 func TestRunner_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &Runner{}, "{}")
 
 	u := &Runner{
-		ID:     Int64(1),
-		Name:   String("n"),
-		OS:     String("o"),
-		Status: String("s"),
-		Busy:   Bool(false),
+		ID:     Ptr(int64(1)),
+		Name:   Ptr("n"),
+		OS:     Ptr("o"),
+		Status: Ptr("s"),
+		Busy:   Ptr(false),
 		Labels: []*RunnerLabels{
 			{
-				ID:   Int64(1),
-				Name: String("n"),
-				Type: String("t"),
+				ID:   Ptr(int64(1)),
+				Name: Ptr("n"),
+				Type: Ptr("t"),
 			},
 		},
 	}
@@ -707,22 +678,23 @@ func TestRunner_Marshal(t *testing.T) {
 }
 
 func TestRunners_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &Runners{}, "{}")
 
 	u := &Runners{
 		TotalCount: 1,
 		Runners: []*Runner{
 			{
-				ID:     Int64(1),
-				Name:   String("n"),
-				OS:     String("o"),
-				Status: String("s"),
-				Busy:   Bool(false),
+				ID:     Ptr(int64(1)),
+				Name:   Ptr("n"),
+				OS:     Ptr("o"),
+				Status: Ptr("s"),
+				Busy:   Ptr(false),
 				Labels: []*RunnerLabels{
 					{
-						ID:   Int64(1),
-						Name: String("n"),
-						Type: String("t"),
+						ID:   Ptr(int64(1)),
+						Name: Ptr("n"),
+						Type: Ptr("t"),
 					},
 				},
 			},
@@ -753,10 +725,11 @@ func TestRunners_Marshal(t *testing.T) {
 }
 
 func TestRemoveToken_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &RemoveToken{}, "{}")
 
 	u := &RemoveToken{
-		Token:     String("t"),
+		Token:     Ptr("t"),
 		ExpiresAt: &Timestamp{referenceTime},
 	}
 
