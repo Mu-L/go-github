@@ -16,8 +16,8 @@ import (
 )
 
 func TestRepositoriesService_ListPreReceiveHooks(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/pre-receive-hooks", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -34,7 +34,7 @@ func TestRepositoriesService_ListPreReceiveHooks(t *testing.T) {
 		t.Errorf("Repositories.ListHooks returned error: %v", err)
 	}
 
-	want := []*PreReceiveHook{{ID: Int64(1)}, {ID: Int64(2)}}
+	want := []*PreReceiveHook{{ID: Ptr(int64(1))}, {ID: Ptr(int64(2))}}
 	if !cmp.Equal(hooks, want) {
 		t.Errorf("Repositories.ListPreReceiveHooks returned %+v, want %+v", hooks, want)
 	}
@@ -55,8 +55,8 @@ func TestRepositoriesService_ListPreReceiveHooks(t *testing.T) {
 }
 
 func TestRepositoriesService_ListPreReceiveHooks_invalidOwner(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Repositories.ListPreReceiveHooks(ctx, "%", "%", nil)
@@ -64,8 +64,8 @@ func TestRepositoriesService_ListPreReceiveHooks_invalidOwner(t *testing.T) {
 }
 
 func TestRepositoriesService_GetPreReceiveHook(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/pre-receive-hooks/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -79,7 +79,7 @@ func TestRepositoriesService_GetPreReceiveHook(t *testing.T) {
 		t.Errorf("Repositories.GetPreReceiveHook returned error: %v", err)
 	}
 
-	want := &PreReceiveHook{ID: Int64(1)}
+	want := &PreReceiveHook{ID: Ptr(int64(1))}
 	if !cmp.Equal(hook, want) {
 		t.Errorf("Repositories.GetPreReceiveHook returned %+v, want %+v", hook, want)
 	}
@@ -100,8 +100,8 @@ func TestRepositoriesService_GetPreReceiveHook(t *testing.T) {
 }
 
 func TestRepositoriesService_GetPreReceiveHook_invalidOwner(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Repositories.GetPreReceiveHook(ctx, "%", "%", 1)
@@ -109,14 +109,14 @@ func TestRepositoriesService_GetPreReceiveHook_invalidOwner(t *testing.T) {
 }
 
 func TestRepositoriesService_UpdatePreReceiveHook(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	input := &PreReceiveHook{}
 
 	mux.HandleFunc("/repos/o/r/pre-receive-hooks/1", func(w http.ResponseWriter, r *http.Request) {
 		v := new(PreReceiveHook)
-		json.NewDecoder(r.Body).Decode(v)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
 
 		testMethod(t, r, "PATCH")
 		if !cmp.Equal(v, input) {
@@ -132,7 +132,7 @@ func TestRepositoriesService_UpdatePreReceiveHook(t *testing.T) {
 		t.Errorf("Repositories.UpdatePreReceiveHook returned error: %v", err)
 	}
 
-	want := &PreReceiveHook{ID: Int64(1)}
+	want := &PreReceiveHook{ID: Ptr(int64(1))}
 	if !cmp.Equal(hook, want) {
 		t.Errorf("Repositories.UpdatePreReceiveHook returned %+v, want %+v", hook, want)
 	}
@@ -153,8 +153,8 @@ func TestRepositoriesService_UpdatePreReceiveHook(t *testing.T) {
 }
 
 func TestRepositoriesService_PreReceiveHook_invalidOwner(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Repositories.UpdatePreReceiveHook(ctx, "%", "%", 1, nil)
@@ -162,8 +162,8 @@ func TestRepositoriesService_PreReceiveHook_invalidOwner(t *testing.T) {
 }
 
 func TestRepositoriesService_DeletePreReceiveHook(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/pre-receive-hooks/1", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "DELETE")
@@ -187,10 +187,31 @@ func TestRepositoriesService_DeletePreReceiveHook(t *testing.T) {
 }
 
 func TestRepositoriesService_DeletePreReceiveHook_invalidOwner(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, err := client.Repositories.DeletePreReceiveHook(ctx, "%", "%", 1)
 	testURLParseError(t, err)
+}
+
+func TestPreReceiveHook_Marshal(t *testing.T) {
+	t.Parallel()
+	testJSONMarshal(t, &PreReceiveHook{}, "{}")
+
+	u := &PreReceiveHook{
+		ID:          Ptr(int64(1)),
+		Name:        Ptr("name"),
+		Enforcement: Ptr("e"),
+		ConfigURL:   Ptr("curl"),
+	}
+
+	want := `{
+		"id": 1,
+		"name": "name",
+		"enforcement": "e",
+		"configuration_url": "curl"
+	}`
+
+	testJSONMarshal(t, u, want)
 }

@@ -25,16 +25,11 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/google/go-github/v38/github"
-	"golang.org/x/oauth2"
+	"github.com/google/go-github/v69/github"
 )
 
 var (
 	client *github.Client
-
-	// auth indicates whether tests are being run with an OAuth token.
-	// Tests can use this flag to skip certain tests when run without auth.
-	auth bool
 
 	skipURLs = flag.Bool("skip_urls", false, "skip url fields")
 )
@@ -44,21 +39,16 @@ func main() {
 
 	token := os.Getenv("GITHUB_AUTH_TOKEN")
 	if token == "" {
-		print("!!! No OAuth token. Some tests won't run. !!!\n\n")
+		fmt.Print("!!! No OAuth token. Some tests won't run. !!!\n\n")
 		client = github.NewClient(nil)
 	} else {
-		tc := oauth2.NewClient(context.Background(), oauth2.StaticTokenSource(
-			&oauth2.Token{AccessToken: token},
-		))
-		client = github.NewClient(tc)
-		auth = true
+		client = github.NewClient(nil).WithAuthToken(token)
 	}
 
 	for _, tt := range []struct {
 		url string
 		typ interface{}
 	}{
-		//{"rate_limit", &github.RateLimits{}},
 		{"users/octocat", &github.User{}},
 		{"user", &github.User{}},
 		{"users/willnorris/keys", &[]github.Key{}},

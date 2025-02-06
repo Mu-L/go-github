@@ -15,15 +15,15 @@ import (
 )
 
 func TestBillingService_GetActionsBillingOrg(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/settings/billing/actions", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		fmt.Fprint(w, `{
-				"total_minutes_used": 305,
-				"total_paid_minutes_used": 0,
-				"included_minutes": 3000,
+				"total_minutes_used": 305.0,
+				"total_paid_minutes_used": 0.0,
+				"included_minutes": 3000.0,
 				"minutes_used_breakdown": {
 					"UBUNTU": 205,
 					"MACOS": 10,
@@ -39,13 +39,13 @@ func TestBillingService_GetActionsBillingOrg(t *testing.T) {
 	}
 
 	want := &ActionBilling{
-		TotalMinutesUsed:     305,
-		TotalPaidMinutesUsed: 0,
-		IncludedMinutes:      3000,
+		TotalMinutesUsed:     305.0,
+		TotalPaidMinutesUsed: 0.0,
+		IncludedMinutes:      3000.0,
 		MinutesUsedBreakdown: MinutesUsedBreakdown{
-			Ubuntu:  205,
-			MacOS:   10,
-			Windows: 90,
+			"UBUNTU":  205,
+			"MACOS":   10,
+			"WINDOWS": 90,
 		},
 	}
 	if !cmp.Equal(hook, want) {
@@ -57,11 +57,19 @@ func TestBillingService_GetActionsBillingOrg(t *testing.T) {
 		_, _, err = client.Billing.GetActionsBillingOrg(ctx, "\n")
 		return err
 	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Billing.GetActionsBillingOrg(ctx, "o")
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
 }
 
 func TestBillingService_GetActionsBillingOrg_invalidOrg(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Billing.GetActionsBillingOrg(ctx, "%")
@@ -69,8 +77,8 @@ func TestBillingService_GetActionsBillingOrg_invalidOrg(t *testing.T) {
 }
 
 func TestBillingService_GetPackagesBillingOrg(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/settings/billing/packages", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -101,11 +109,19 @@ func TestBillingService_GetPackagesBillingOrg(t *testing.T) {
 		_, _, err = client.Billing.GetPackagesBillingOrg(ctx, "\n")
 		return err
 	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Billing.GetPackagesBillingOrg(ctx, "o")
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
 }
 
 func TestBillingService_GetPackagesBillingOrg_invalidOrg(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Billing.GetPackagesBillingOrg(ctx, "%")
@@ -113,14 +129,14 @@ func TestBillingService_GetPackagesBillingOrg_invalidOrg(t *testing.T) {
 }
 
 func TestBillingService_GetStorageBillingOrg(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/orgs/o/settings/billing/shared-storage", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		fmt.Fprint(w, `{
 				"days_left_in_billing_cycle": 20,
-				"estimated_paid_storage_for_month": 15,
+				"estimated_paid_storage_for_month": 15.25,
 				"estimated_storage_for_month": 40
 			}`)
 	})
@@ -133,7 +149,7 @@ func TestBillingService_GetStorageBillingOrg(t *testing.T) {
 
 	want := &StorageBilling{
 		DaysLeftInBillingCycle:       20,
-		EstimatedPaidStorageForMonth: 15,
+		EstimatedPaidStorageForMonth: 15.25,
 		EstimatedStorageForMonth:     40,
 	}
 	if !cmp.Equal(hook, want) {
@@ -145,11 +161,19 @@ func TestBillingService_GetStorageBillingOrg(t *testing.T) {
 		_, _, err = client.Billing.GetStorageBillingOrg(ctx, "\n")
 		return err
 	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Billing.GetStorageBillingOrg(ctx, "o")
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
 }
 
 func TestBillingService_GetStorageBillingOrg_invalidOrg(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Billing.GetStorageBillingOrg(ctx, "%")
@@ -157,8 +181,8 @@ func TestBillingService_GetStorageBillingOrg_invalidOrg(t *testing.T) {
 }
 
 func TestBillingService_GetActionsBillingUser(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/users/u/settings/billing/actions", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -185,9 +209,9 @@ func TestBillingService_GetActionsBillingUser(t *testing.T) {
 		TotalPaidMinutesUsed: 0,
 		IncludedMinutes:      3000,
 		MinutesUsedBreakdown: MinutesUsedBreakdown{
-			Ubuntu:  205,
-			MacOS:   10,
-			Windows: 90,
+			"UBUNTU":  205,
+			"MACOS":   10,
+			"WINDOWS": 90,
 		},
 	}
 	if !cmp.Equal(hook, want) {
@@ -199,11 +223,19 @@ func TestBillingService_GetActionsBillingUser(t *testing.T) {
 		_, _, err = client.Billing.GetActionsBillingOrg(ctx, "\n")
 		return err
 	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Billing.GetActionsBillingUser(ctx, "o")
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
 }
 
 func TestBillingService_GetActionsBillingUser_invalidUser(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Billing.GetActionsBillingUser(ctx, "%")
@@ -211,8 +243,8 @@ func TestBillingService_GetActionsBillingUser_invalidUser(t *testing.T) {
 }
 
 func TestBillingService_GetPackagesBillingUser(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/users/u/settings/billing/packages", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
@@ -243,11 +275,19 @@ func TestBillingService_GetPackagesBillingUser(t *testing.T) {
 		_, _, err = client.Billing.GetPackagesBillingUser(ctx, "\n")
 		return err
 	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Billing.GetPackagesBillingUser(ctx, "o")
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
 }
 
 func TestBillingService_GetPackagesBillingUser_invalidUser(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Billing.GetPackagesBillingUser(ctx, "%")
@@ -255,14 +295,14 @@ func TestBillingService_GetPackagesBillingUser_invalidUser(t *testing.T) {
 }
 
 func TestBillingService_GetStorageBillingUser(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/users/u/settings/billing/shared-storage", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		fmt.Fprint(w, `{
 				"days_left_in_billing_cycle": 20,
-				"estimated_paid_storage_for_month": 15,
+				"estimated_paid_storage_for_month": 15.25,
 				"estimated_storage_for_month": 40
 			}`)
 	})
@@ -275,7 +315,7 @@ func TestBillingService_GetStorageBillingUser(t *testing.T) {
 
 	want := &StorageBilling{
 		DaysLeftInBillingCycle:       20,
-		EstimatedPaidStorageForMonth: 15,
+		EstimatedPaidStorageForMonth: 15.25,
 		EstimatedStorageForMonth:     40,
 	}
 	if !cmp.Equal(hook, want) {
@@ -287,11 +327,19 @@ func TestBillingService_GetStorageBillingUser(t *testing.T) {
 		_, _, err = client.Billing.GetStorageBillingUser(ctx, "\n")
 		return err
 	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Billing.GetStorageBillingUser(ctx, "o")
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
 }
 
 func TestBillingService_GetStorageBillingUser_invalidUser(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.Billing.GetStorageBillingUser(ctx, "%")
@@ -299,12 +347,13 @@ func TestBillingService_GetStorageBillingUser_invalidUser(t *testing.T) {
 }
 
 func TestMinutesUsedBreakdown_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &MinutesUsedBreakdown{}, "{}")
 
 	u := &MinutesUsedBreakdown{
-		Ubuntu:  1,
-		MacOS:   1,
-		Windows: 1,
+		"UBUNTU":  1,
+		"MACOS":   1,
+		"WINDOWS": 1,
 	}
 
 	want := `{
@@ -317,6 +366,7 @@ func TestMinutesUsedBreakdown_Marshal(t *testing.T) {
 }
 
 func TestActionBilling_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &MinutesUsedBreakdown{}, "{}")
 
 	u := &ActionBilling{
@@ -324,9 +374,9 @@ func TestActionBilling_Marshal(t *testing.T) {
 		TotalPaidMinutesUsed: 1,
 		IncludedMinutes:      1,
 		MinutesUsedBreakdown: MinutesUsedBreakdown{
-			Ubuntu:  1,
-			MacOS:   1,
-			Windows: 1,
+			"UBUNTU":  1,
+			"MACOS":   1,
+			"WINDOWS": 1,
 		},
 	}
 
@@ -345,6 +395,7 @@ func TestActionBilling_Marshal(t *testing.T) {
 }
 
 func TestPackageBilling_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &PackageBilling{}, "{}")
 
 	u := &PackageBilling{
@@ -363,6 +414,7 @@ func TestPackageBilling_Marshal(t *testing.T) {
 }
 
 func TestStorageBilling_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &StorageBilling{}, "{}")
 
 	u := &StorageBilling{
@@ -378,4 +430,83 @@ func TestStorageBilling_Marshal(t *testing.T) {
 	}`
 
 	testJSONMarshal(t, u, want)
+}
+
+func TestBillingService_GetAdvancedSecurityActiveCommittersOrg(t *testing.T) {
+	t.Parallel()
+	client, mux, _ := setup(t)
+
+	mux.HandleFunc("/orgs/o/settings/billing/advanced-security", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		fmt.Fprint(w, `{
+  "total_advanced_security_committers": 2,
+  "total_count": 2,
+  "maximum_advanced_security_committers": 3,
+  "purchased_advanced_security_committers": 4,
+  "repositories": [
+    {
+      "name": "octocat-org/Hello-World",
+      "advanced_security_committers": 2,
+      "advanced_security_committers_breakdown": [
+        {
+          "user_login": "octokitten",
+          "last_pushed_date": "2021-10-25"
+        }
+      ]
+    }
+  ]
+}`)
+	})
+
+	ctx := context.Background()
+	opts := &ListOptions{Page: 2, PerPage: 50}
+	hook, _, err := client.Billing.GetAdvancedSecurityActiveCommittersOrg(ctx, "o", opts)
+	if err != nil {
+		t.Errorf("Billing.GetAdvancedSecurityActiveCommittersOrg	 returned error: %v", err)
+	}
+
+	want := &ActiveCommitters{
+		TotalAdvancedSecurityCommitters:     2,
+		TotalCount:                          2,
+		MaximumAdvancedSecurityCommitters:   3,
+		PurchasedAdvancedSecurityCommitters: 4,
+		Repositories: []*RepositoryActiveCommitters{
+			{
+				Name:                       Ptr("octocat-org/Hello-World"),
+				AdvancedSecurityCommitters: Ptr(2),
+				AdvancedSecurityCommittersBreakdown: []*AdvancedSecurityCommittersBreakdown{
+					{
+						UserLogin:      Ptr("octokitten"),
+						LastPushedDate: Ptr("2021-10-25"),
+					},
+				},
+			},
+		},
+	}
+	if !cmp.Equal(hook, want) {
+		t.Errorf("Billing.GetAdvancedSecurityActiveCommittersOrg returned %+v, want %+v", hook, want)
+	}
+
+	const methodName = "GetAdvancedSecurityActiveCommittersOrg"
+	testBadOptions(t, methodName, func() (err error) {
+		_, _, err = client.Billing.GetAdvancedSecurityActiveCommittersOrg(ctx, "\n", nil)
+		return err
+	})
+
+	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
+		got, resp, err := client.Billing.GetAdvancedSecurityActiveCommittersOrg(ctx, "o", nil)
+		if got != nil {
+			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
+		}
+		return resp, err
+	})
+}
+
+func TestBillingService_GetAdvancedSecurityActiveCommittersOrg_invalidOrg(t *testing.T) {
+	t.Parallel()
+	client, _, _ := setup(t)
+
+	ctx := context.Background()
+	_, _, err := client.Billing.GetAdvancedSecurityActiveCommittersOrg(ctx, "%", nil)
+	testURLParseError(t, err)
 }

@@ -26,6 +26,7 @@ var (
 )
 
 func TestTimestamp_Marshal(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		desc    string
 		data    Timestamp
@@ -51,6 +52,7 @@ func TestTimestamp_Marshal(t *testing.T) {
 }
 
 func TestTimestamp_Unmarshal(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		desc    string
 		data    string
@@ -84,6 +86,7 @@ func TestTimestamp_Unmarshal(t *testing.T) {
 }
 
 func TestTimestamp_MarshalReflexivity(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		desc string
 		data Timestamp
@@ -113,6 +116,7 @@ type WrappedTimestamp struct {
 }
 
 func TestWrappedTimestamp_Marshal(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		desc    string
 		data    WrappedTimestamp
@@ -138,6 +142,7 @@ func TestWrappedTimestamp_Marshal(t *testing.T) {
 }
 
 func TestWrappedTimestamp_Unmarshal(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		desc    string
 		data    string
@@ -169,7 +174,20 @@ func TestWrappedTimestamp_Unmarshal(t *testing.T) {
 	}
 }
 
+func TestTimestamp_GetTime(t *testing.T) {
+	t.Parallel()
+	var t1 *Timestamp
+	if t1.GetTime() != nil {
+		t.Errorf("nil timestamp should return nil, got: %v", t1.GetTime())
+	}
+	t1 = &Timestamp{referenceTime}
+	if !t1.GetTime().Equal(referenceTime) {
+		t.Errorf("want reference time, got: %s", t1.GetTime().String())
+	}
+}
+
 func TestWrappedTimestamp_MarshalReflexivity(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		desc string
 		data WrappedTimestamp

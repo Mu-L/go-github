@@ -4,7 +4,6 @@
 // license that can be found in the LICENSE file.
 
 //go:build integration
-// +build integration
 
 package integration
 
@@ -15,32 +14,32 @@ import (
 )
 
 func TestEmojis(t *testing.T) {
-	emoji, _, err := client.ListEmojis(context.Background())
+	emoji, _, err := client.Emojis.List(context.Background())
 	if err != nil {
-		t.Fatalf("ListEmojis returned error: %v", err)
+		t.Fatalf("List returned error: %v", err)
 	}
 
 	if len(emoji) == 0 {
-		t.Errorf("ListEmojis returned no emojis")
+		t.Errorf("List returned no emojis")
 	}
 
 	if _, ok := emoji["+1"]; !ok {
-		t.Errorf("ListEmojis missing '+1' emoji")
+		t.Errorf("List missing '+1' emoji")
 	}
 }
 
 func TestAPIMeta(t *testing.T) {
-	meta, _, err := client.APIMeta(context.Background())
+	meta, _, err := client.Meta.Get(context.Background())
 	if err != nil {
-		t.Fatalf("APIMeta returned error: %v", err)
+		t.Fatalf("Get returned error: %v", err)
 	}
 
 	if len(meta.Hooks) == 0 {
-		t.Errorf("APIMeta returned no hook addresses")
+		t.Errorf("Get returned no hook addresses")
 	}
 
 	if len(meta.Git) == 0 {
-		t.Errorf("APIMeta returned no git addresses")
+		t.Errorf("Get returned no git addresses")
 	}
 
 	if !*meta.VerifiablePasswordAuthentication {
@@ -49,7 +48,7 @@ func TestAPIMeta(t *testing.T) {
 }
 
 func TestRateLimits(t *testing.T) {
-	limits, _, err := client.RateLimits(context.Background())
+	limits, _, err := client.RateLimit.Get(context.Background())
 	if err != nil {
 		t.Fatalf("RateLimits returned error: %v", err)
 	}
@@ -65,16 +64,5 @@ func TestRateLimits(t *testing.T) {
 
 	if limits.Core.Reset.Time.Before(time.Now().Add(-1 * time.Minute)) {
 		t.Errorf("Core.Reset is more than 1 minute in the past; that doesn't seem right.")
-	}
-}
-
-func TestListServiceHooks(t *testing.T) {
-	hooks, _, err := client.ListServiceHooks(context.Background())
-	if err != nil {
-		t.Fatalf("ListServiceHooks returned error: %v", err)
-	}
-
-	if len(hooks) == 0 {
-		t.Fatalf("ListServiceHooks returned no hooks")
 	}
 }

@@ -1,3 +1,8 @@
+// Copyright 2013 The go-github AUTHORS. All rights reserved.
+//
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package scrape
 
 import (
@@ -5,10 +10,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v69/github"
 )
 
 func Test_AppRestrictionsEnabled(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		description string
 		testFile    string
@@ -28,39 +34,39 @@ func Test_AppRestrictionsEnabled(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.description, func(t *testing.T) {
-			client, mux, cleanup := setup()
-			defer cleanup()
+			t.Parallel()
+			client, mux := setup(t)
 
 			mux.HandleFunc("/organizations/o/settings/oauth_application_policy", func(w http.ResponseWriter, r *http.Request) {
-				copyTestFile(w, tt.testFile)
+				copyTestFile(t, w, tt.testFile)
 			})
 
 			got, err := client.AppRestrictionsEnabled("o")
 			if err != nil {
-				t.Errorf("AppRestrictionsEnabled returned err: %v", err)
+				t.Fatalf("AppRestrictionsEnabled returned err: %v", err)
 			}
 			if want := tt.want; got != want {
 				t.Errorf("AppRestrictionsEnabled returned %t, want %t", got, want)
 			}
-
 		})
 	}
 }
 
 func Test_ListOAuthApps(t *testing.T) {
-	client, mux, cleanup := setup()
-	defer cleanup()
+	t.Parallel()
+	client, mux := setup(t)
 
 	mux.HandleFunc("/organizations/e/settings/oauth_application_policy", func(w http.ResponseWriter, r *http.Request) {
-		copyTestFile(w, "access-restrictions-enabled.html")
+		copyTestFile(t, w, "access-restrictions-enabled.html")
 	})
 
 	got, err := client.ListOAuthApps("e")
 	if err != nil {
-		t.Errorf("ListOAuthApps(e) returned err: %v", err)
+		t.Fatalf("ListOAuthApps(e) returned err: %v", err)
 	}
-	want := []OAuthApp{
+	want := []*OAuthApp{
 		{
 			ID:          22222,
 			Name:        "Coveralls",
@@ -83,23 +89,40 @@ func Test_ListOAuthApps(t *testing.T) {
 	if !cmp.Equal(got, want) {
 		t.Errorf("ListOAuthApps(o) returned %v, want %v", got, want)
 	}
-
 }
 
 func Test_CreateApp(t *testing.T) {
-	client, mux, cleanup := setup()
-	defer cleanup()
+	t.Parallel()
+	client, mux := setup(t)
 
 	mux.HandleFunc("/apps/settings/new", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 	})
 
 	if _, err := client.CreateApp(&AppManifest{
-		URL: github.String("https://example.com"),
+		URL: github.Ptr("https://example.com"),
 		HookAttributes: map[string]string{
 			"url": "https://example.com/hook",
 		},
-	}); err != nil {
+	}, ""); err != nil {
 		t.Fatalf("CreateApp: %v", err)
+	}
+}
+
+func Test_CreateAppWithOrg(t *testing.T) {
+	t.Parallel()
+	client, mux := setup(t)
+
+	mux.HandleFunc("/organizations/example/apps/settings/new", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusCreated)
+	})
+
+	if _, err := client.CreateApp(&AppManifest{
+		URL: github.Ptr("https://example.com"),
+		HookAttributes: map[string]string{
+			"url": "https://example.com/hook",
+		},
+	}, "example"); err != nil {
+		t.Fatalf("CreateAppWithOrg: %v", err)
 	}
 }

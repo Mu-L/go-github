@@ -8,7 +8,6 @@ package github
 import (
 	"context"
 	"fmt"
-	"time"
 )
 
 // GPGKey represents a GitHub user's public GPG key used to verify GPG signed commits and tags.
@@ -26,8 +25,8 @@ type GPGKey struct {
 	CanEncryptComms   *bool       `json:"can_encrypt_comms,omitempty"`
 	CanEncryptStorage *bool       `json:"can_encrypt_storage,omitempty"`
 	CanCertify        *bool       `json:"can_certify,omitempty"`
-	CreatedAt         *time.Time  `json:"created_at,omitempty"`
-	ExpiresAt         *time.Time  `json:"expires_at,omitempty"`
+	CreatedAt         *Timestamp  `json:"created_at,omitempty"`
+	ExpiresAt         *Timestamp  `json:"expires_at,omitempty"`
 }
 
 // String stringifies a GPGKey.
@@ -45,8 +44,11 @@ type GPGEmail struct {
 // string will fetch keys for the authenticated user. It requires authentication
 // via Basic Auth or via OAuth with at least read:gpg_key scope.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/users/#list-gpg-keys-for-the-authenticated-user
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/users/#list-gpg-keys-for-a-user
+// GitHub API docs: https://docs.github.com/rest/users/gpg-keys#list-gpg-keys-for-a-user
+// GitHub API docs: https://docs.github.com/rest/users/gpg-keys#list-gpg-keys-for-the-authenticated-user
+//
+//meta:operation GET /user/gpg_keys
+//meta:operation GET /users/{username}/gpg_keys
 func (s *UsersService) ListGPGKeys(ctx context.Context, user string, opts *ListOptions) ([]*GPGKey, *Response, error) {
 	var u string
 	if user != "" {
@@ -76,7 +78,9 @@ func (s *UsersService) ListGPGKeys(ctx context.Context, user string, opts *ListO
 // GetGPGKey gets extended details for a single GPG key. It requires authentication
 // via Basic Auth or via OAuth with at least read:gpg_key scope.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/users/#get-a-gpg-key-for-the-authenticated-user
+// GitHub API docs: https://docs.github.com/rest/users/gpg-keys#get-a-gpg-key-for-the-authenticated-user
+//
+//meta:operation GET /user/gpg_keys/{gpg_key_id}
 func (s *UsersService) GetGPGKey(ctx context.Context, id int64) (*GPGKey, *Response, error) {
 	u := fmt.Sprintf("user/gpg_keys/%v", id)
 	req, err := s.client.NewRequest("GET", u, nil)
@@ -93,10 +97,12 @@ func (s *UsersService) GetGPGKey(ctx context.Context, id int64) (*GPGKey, *Respo
 	return key, resp, nil
 }
 
-// CreateGPGKey creates a GPG key. It requires authenticatation via Basic Auth
+// CreateGPGKey creates a GPG key. It requires authentication via Basic Auth
 // or OAuth with at least write:gpg_key scope.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/users/#create-a-gpg-key
+// GitHub API docs: https://docs.github.com/rest/users/gpg-keys#create-a-gpg-key-for-the-authenticated-user
+//
+//meta:operation POST /user/gpg_keys
 func (s *UsersService) CreateGPGKey(ctx context.Context, armoredPublicKey string) (*GPGKey, *Response, error) {
 	gpgKey := &struct {
 		ArmoredPublicKey string `json:"armored_public_key"`
@@ -118,7 +124,9 @@ func (s *UsersService) CreateGPGKey(ctx context.Context, armoredPublicKey string
 // DeleteGPGKey deletes a GPG key. It requires authentication via Basic Auth or
 // via OAuth with at least admin:gpg_key scope.
 //
-// GitHub API docs: https://docs.github.com/en/free-pro-team@latest/rest/reference/users/#delete-a-gpg-key-for-the-authenticated-user
+// GitHub API docs: https://docs.github.com/rest/users/gpg-keys#delete-a-gpg-key-for-the-authenticated-user
+//
+//meta:operation DELETE /user/gpg_keys/{gpg_key_id}
 func (s *UsersService) DeleteGPGKey(ctx context.Context, id int64) (*Response, error) {
 	u := fmt.Sprintf("user/gpg_keys/%v", id)
 	req, err := s.client.NewRequest("DELETE", u, nil)

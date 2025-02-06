@@ -17,36 +17,35 @@ import (
 )
 
 func TestIssueImportService_Create(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	createdAt := time.Date(2020, time.August, 11, 15, 30, 0, 0, time.UTC)
 	input := &IssueImportRequest{
 		IssueImport: IssueImport{
-			Assignee:  String("developer"),
+			Assignee:  Ptr("developer"),
 			Body:      "Dummy description",
-			CreatedAt: &createdAt,
+			CreatedAt: &Timestamp{createdAt},
 			Labels:    []string{"l1", "l2"},
-			Milestone: Int(1),
+			Milestone: Ptr(1),
 			Title:     "Dummy Issue",
 		},
 		Comments: []*Comment{{
-			CreatedAt: &createdAt,
+			CreatedAt: &Timestamp{createdAt},
 			Body:      "Comment body",
 		}},
 	}
 
 	mux.HandleFunc("/repos/o/r/import/issues", func(w http.ResponseWriter, r *http.Request) {
 		v := new(IssueImportRequest)
-		json.NewDecoder(r.Body).Decode(v)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
 		testMethod(t, r, "POST")
 		testHeader(t, r, "Accept", mediaTypeIssueImportAPI)
 		if !cmp.Equal(v, input) {
 			t.Errorf("Request body = %+v, want %+v", v, input)
 		}
 
-		w.WriteHeader(http.StatusAccepted)
-		w.Write(issueImportResponseJSON)
+		assertWrite(t, w, issueImportResponseJSON)
 	})
 
 	ctx := context.Background()
@@ -75,9 +74,96 @@ func TestIssueImportService_Create(t *testing.T) {
 	})
 }
 
+func TestIssueImportService_Create_deferred(t *testing.T) {
+	t.Parallel()
+	client, mux, _ := setup(t)
+
+	createdAt := time.Date(2020, time.August, 11, 15, 30, 0, 0, time.UTC)
+	input := &IssueImportRequest{
+		IssueImport: IssueImport{
+			Assignee:  Ptr("developer"),
+			Body:      "Dummy description",
+			CreatedAt: &Timestamp{createdAt},
+			Labels:    []string{"l1", "l2"},
+			Milestone: Ptr(1),
+			Title:     "Dummy Issue",
+		},
+		Comments: []*Comment{{
+			CreatedAt: &Timestamp{createdAt},
+			Body:      "Comment body",
+		}},
+	}
+
+	mux.HandleFunc("/repos/o/r/import/issues", func(w http.ResponseWriter, r *http.Request) {
+		v := new(IssueImportRequest)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
+		testMethod(t, r, "POST")
+		testHeader(t, r, "Accept", mediaTypeIssueImportAPI)
+		if !cmp.Equal(v, input) {
+			t.Errorf("Request body = %+v, want %+v", v, input)
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		assertWrite(t, w, issueImportResponseJSON)
+	})
+
+	ctx := context.Background()
+	got, _, err := client.IssueImport.Create(ctx, "o", "r", input)
+
+	if _, ok := err.(*AcceptedError); !ok {
+		t.Errorf("Create returned error: %v (want AcceptedError)", err)
+	}
+
+	want := wantIssueImportResponse
+	if !cmp.Equal(got, want) {
+		t.Errorf("Create = %+v, want %+v", got, want)
+	}
+}
+
+func TestIssueImportService_Create_badResponse(t *testing.T) {
+	t.Parallel()
+	client, mux, _ := setup(t)
+
+	createdAt := time.Date(2020, time.August, 11, 15, 30, 0, 0, time.UTC)
+	input := &IssueImportRequest{
+		IssueImport: IssueImport{
+			Assignee:  Ptr("developer"),
+			Body:      "Dummy description",
+			CreatedAt: &Timestamp{createdAt},
+			Labels:    []string{"l1", "l2"},
+			Milestone: Ptr(1),
+			Title:     "Dummy Issue",
+		},
+		Comments: []*Comment{{
+			CreatedAt: &Timestamp{createdAt},
+			Body:      "Comment body",
+		}},
+	}
+
+	mux.HandleFunc("/repos/o/r/import/issues", func(w http.ResponseWriter, r *http.Request) {
+		v := new(IssueImportRequest)
+		assertNilError(t, json.NewDecoder(r.Body).Decode(v))
+		testMethod(t, r, "POST")
+		testHeader(t, r, "Accept", mediaTypeIssueImportAPI)
+		if !cmp.Equal(v, input) {
+			t.Errorf("Request body = %+v, want %+v", v, input)
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		assertWrite(t, w, []byte("{[}"))
+	})
+
+	ctx := context.Background()
+	_, _, err := client.IssueImport.Create(ctx, "o", "r", input)
+
+	if err == nil || err.Error() != "invalid character '[' looking for beginning of object key string" {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestIssueImportService_Create_invalidOwner(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.IssueImport.Create(ctx, "%", "r", nil)
@@ -85,14 +171,14 @@ func TestIssueImportService_Create_invalidOwner(t *testing.T) {
 }
 
 func TestIssueImportService_CheckStatus(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/import/issues/3", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		testHeader(t, r, "Accept", mediaTypeIssueImportAPI)
 		w.WriteHeader(http.StatusOK)
-		w.Write(issueImportResponseJSON)
+		assertWrite(t, w, issueImportResponseJSON)
 	})
 
 	ctx := context.Background()
@@ -122,8 +208,8 @@ func TestIssueImportService_CheckStatus(t *testing.T) {
 }
 
 func TestIssueImportService_CheckStatus_invalidOwner(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, _, _ := setup(t)
 
 	ctx := context.Background()
 	_, _, err := client.IssueImport.CheckStatus(ctx, "%", "r", 1)
@@ -131,18 +217,18 @@ func TestIssueImportService_CheckStatus_invalidOwner(t *testing.T) {
 }
 
 func TestIssueImportService_CheckStatusSince(t *testing.T) {
-	client, mux, _, teardown := setup()
-	defer teardown()
+	t.Parallel()
+	client, mux, _ := setup(t)
 
 	mux.HandleFunc("/repos/o/r/import/issues", func(w http.ResponseWriter, r *http.Request) {
 		testMethod(t, r, "GET")
 		testHeader(t, r, "Accept", mediaTypeIssueImportAPI)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(fmt.Sprintf("[%s]", issueImportResponseJSON)))
+		assertWrite(t, w, []byte(fmt.Sprintf("[%s]", issueImportResponseJSON)))
 	})
 
 	ctx := context.Background()
-	got, _, err := client.IssueImport.CheckStatusSince(ctx, "o", "r", time.Now())
+	got, _, err := client.IssueImport.CheckStatusSince(ctx, "o", "r", Timestamp{time.Now()})
 	if err != nil {
 		t.Errorf("CheckStatusSince returned error: %v", err)
 	}
@@ -154,12 +240,12 @@ func TestIssueImportService_CheckStatusSince(t *testing.T) {
 
 	const methodName = "CheckStatusSince"
 	testBadOptions(t, methodName, func() (err error) {
-		_, _, err = client.IssueImport.CheckStatusSince(ctx, "\n", "\n", time.Now())
+		_, _, err = client.IssueImport.CheckStatusSince(ctx, "\n", "\n", Timestamp{time.Now()})
 		return err
 	})
 
 	testNewRequestAndDoFailure(t, methodName, client, func() (*Response, error) {
-		got, resp, err := client.IssueImport.CheckStatusSince(ctx, "o", "r", time.Now())
+		got, resp, err := client.IssueImport.CheckStatusSince(ctx, "o", "r", Timestamp{time.Now()})
 		if got != nil {
 			t.Errorf("testNewRequestAndDoFailure %v = %#v, want nil", methodName, got)
 		}
@@ -167,12 +253,29 @@ func TestIssueImportService_CheckStatusSince(t *testing.T) {
 	})
 }
 
-func TestIssueImportService_CheckStatusSince_invalidOwner(t *testing.T) {
-	client, _, _, teardown := setup()
-	defer teardown()
+func TestIssueImportService_CheckStatusSince_badResponse(t *testing.T) {
+	t.Parallel()
+	client, mux, _ := setup(t)
+
+	mux.HandleFunc("/repos/o/r/import/issues", func(w http.ResponseWriter, r *http.Request) {
+		testMethod(t, r, "GET")
+		testHeader(t, r, "Accept", mediaTypeIssueImportAPI)
+		w.WriteHeader(http.StatusOK)
+		assertWrite(t, w, []byte("{badly-formed JSON"))
+	})
 
 	ctx := context.Background()
-	_, _, err := client.IssueImport.CheckStatusSince(ctx, "%", "r", time.Now())
+	if _, _, err := client.IssueImport.CheckStatusSince(ctx, "o", "r", Timestamp{time.Now()}); err == nil {
+		t.Errorf("CheckStatusSince returned no error, want JSON err")
+	}
+}
+
+func TestIssueImportService_CheckStatusSince_invalidOwner(t *testing.T) {
+	t.Parallel()
+	client, _, _ := setup(t)
+
+	ctx := context.Background()
+	_, _, err := client.IssueImport.CheckStatusSince(ctx, "%", "r", Timestamp{time.Now()})
 	testURLParseError(t, err)
 }
 
@@ -185,22 +288,23 @@ var issueImportResponseJSON = []byte(`{
 }`)
 
 var wantIssueImportResponse = &IssueImportResponse{
-	ID:              Int(3),
-	Status:          String("pending"),
-	URL:             String("https://api.github.com/repos/o/r/import/issues/3"),
-	ImportIssuesURL: String("https://api.github.com/repos/o/r/import/issues"),
-	RepositoryURL:   String("https://api.github.com/repos/o/r"),
+	ID:              Ptr(3),
+	Status:          Ptr("pending"),
+	URL:             Ptr("https://api.github.com/repos/o/r/import/issues/3"),
+	ImportIssuesURL: Ptr("https://api.github.com/repos/o/r/import/issues"),
+	RepositoryURL:   Ptr("https://api.github.com/repos/o/r"),
 }
 
 func TestIssueImportError_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &IssueImportError{}, "{}")
 
 	u := &IssueImportError{
-		Location: String("loc"),
-		Resource: String("res"),
-		Field:    String("field"),
-		Value:    String("value"),
-		Code:     String("code"),
+		Location: Ptr("loc"),
+		Resource: Ptr("res"),
+		Field:    Ptr("field"),
+		Value:    Ptr("value"),
+		Code:     Ptr("code"),
 	}
 
 	want := `{
@@ -215,25 +319,26 @@ func TestIssueImportError_Marshal(t *testing.T) {
 }
 
 func TestIssueImportResponse_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &IssueImportResponse{}, "{}")
 
 	u := &IssueImportResponse{
-		ID:               Int(1),
-		Status:           String("status"),
-		URL:              String("url"),
-		ImportIssuesURL:  String("iiu"),
-		RepositoryURL:    String("ru"),
-		CreatedAt:        &referenceTime,
-		UpdatedAt:        &referenceTime,
-		Message:          String("msg"),
-		DocumentationURL: String("durl"),
+		ID:               Ptr(1),
+		Status:           Ptr("status"),
+		URL:              Ptr("url"),
+		ImportIssuesURL:  Ptr("iiu"),
+		RepositoryURL:    Ptr("ru"),
+		CreatedAt:        &Timestamp{referenceTime},
+		UpdatedAt:        &Timestamp{referenceTime},
+		Message:          Ptr("msg"),
+		DocumentationURL: Ptr("durl"),
 		Errors: []*IssueImportError{
 			{
-				Location: String("loc"),
-				Resource: String("res"),
-				Field:    String("field"),
-				Value:    String("value"),
-				Code:     String("code"),
+				Location: Ptr("loc"),
+				Resource: Ptr("res"),
+				Field:    Ptr("field"),
+				Value:    Ptr("value"),
+				Code:     Ptr("code"),
 			},
 		},
 	}
@@ -263,10 +368,11 @@ func TestIssueImportResponse_Marshal(t *testing.T) {
 }
 
 func TestComment_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &Comment{}, "{}")
 
 	u := &Comment{
-		CreatedAt: &referenceTime,
+		CreatedAt: &Timestamp{referenceTime},
 		Body:      "body",
 	}
 
@@ -279,17 +385,18 @@ func TestComment_Marshal(t *testing.T) {
 }
 
 func TestIssueImport_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &IssueImport{}, "{}")
 
 	u := &IssueImport{
 		Title:     "title",
 		Body:      "body",
-		CreatedAt: &referenceTime,
-		ClosedAt:  &referenceTime,
-		UpdatedAt: &referenceTime,
-		Assignee:  String("a"),
-		Milestone: Int(1),
-		Closed:    Bool(false),
+		CreatedAt: &Timestamp{referenceTime},
+		ClosedAt:  &Timestamp{referenceTime},
+		UpdatedAt: &Timestamp{referenceTime},
+		Assignee:  Ptr("a"),
+		Milestone: Ptr(1),
+		Closed:    Ptr(false),
 		Labels:    []string{"l"},
 	}
 
@@ -311,23 +418,24 @@ func TestIssueImport_Marshal(t *testing.T) {
 }
 
 func TestIssueImportRequest_Marshal(t *testing.T) {
+	t.Parallel()
 	testJSONMarshal(t, &IssueImportRequest{}, "{}")
 
 	u := &IssueImportRequest{
 		IssueImport: IssueImport{
 			Title:     "title",
 			Body:      "body",
-			CreatedAt: &referenceTime,
-			ClosedAt:  &referenceTime,
-			UpdatedAt: &referenceTime,
-			Assignee:  String("a"),
-			Milestone: Int(1),
-			Closed:    Bool(false),
+			CreatedAt: &Timestamp{referenceTime},
+			ClosedAt:  &Timestamp{referenceTime},
+			UpdatedAt: &Timestamp{referenceTime},
+			Assignee:  Ptr("a"),
+			Milestone: Ptr(1),
+			Closed:    Ptr(false),
 			Labels:    []string{"l"},
 		},
 		Comments: []*Comment{
 			{
-				CreatedAt: &referenceTime,
+				CreatedAt: &Timestamp{referenceTime},
 				Body:      "body",
 			},
 		},

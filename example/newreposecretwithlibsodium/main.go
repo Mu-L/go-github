@@ -14,11 +14,13 @@
 // To verify the new secret, navigate to GitHub Repository > Settings > left side options bar > Secrets.
 //
 // Usage:
+//
 //	export GITHUB_AUTH_TOKEN=<auth token from github that has secret create rights>
 //	export SECRET_VARIABLE=<secret value of the secret variable>
 //	go run main.go -owner <owner name> -repo <repository name> SECRET_VARIABLE
 //
 // Example:
+//
 //	export GITHUB_AUTH_TOKEN=0000000000000000
 //	export SECRET_VARIABLE="my-secret"
 //	go run main.go -owner google -repo go-github SECRET_VARIABLE
@@ -34,8 +36,7 @@ import (
 	"os"
 
 	sodium "github.com/GoKillers/libsodium-go/cryptobox"
-	"github.com/google/go-github/v38/github"
-	"golang.org/x/oauth2"
+	"github.com/google/go-github/v69/github"
 )
 
 var (
@@ -69,10 +70,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ctx, client, err := githubAuth(token)
-	if err != nil {
-		log.Fatalf("unable to authorize using env GITHUB_AUTH_TOKEN: %v", err)
-	}
+	ctx := context.Background()
+	client := github.NewClient(nil).WithAuthToken(token)
 
 	if err := addRepoSecret(ctx, client, *owner, *repo, secretName, secretValue); err != nil {
 		log.Fatal(err)
@@ -95,18 +94,6 @@ func getSecretValue(secretName string) (string, error) {
 		return "", fmt.Errorf("secret value not found under env variable %q", secretName)
 	}
 	return secretValue, nil
-}
-
-// githubAuth returns a GitHub client and context.
-func githubAuth(token string) (context.Context, *github.Client, error) {
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-
-	client := github.NewClient(tc)
-	return ctx, client, nil
 }
 
 // addRepoSecret will add a secret to a GitHub repo for use in GitHub Actions.
@@ -143,7 +130,7 @@ func addRepoSecret(ctx context.Context, client *github.Client, owner string, rep
 	}
 
 	if _, err := client.Actions.CreateOrUpdateRepoSecret(ctx, owner, repo, encryptedSecret); err != nil {
-		return fmt.Errorf("Actions.CreateOrUpdateRepoSecret returned error: %v", err)
+		return fmt.Errorf("client.Actions.CreateOrUpdateRepoSecret returned error: %v", err)
 	}
 
 	return nil
@@ -155,8 +142,7 @@ func encryptSecretWithPublicKey(publicKey *github.PublicKey, secretName string, 
 		return nil, fmt.Errorf("base64.StdEncoding.DecodeString was unable to decode public key: %v", err)
 	}
 
-	secretBytes := []byte(secretValue)
-	encryptedBytes, exit := sodium.CryptoBoxSeal(secretBytes, decodedPublicKey)
+	encryptedBytes, exit := sodium.CryptoBoxSeal([]byte(secretValue), decodedPublicKey)
 	if exit != 0 {
 		return nil, errors.New("sodium.CryptoBoxSeal exited with non zero exit code")
 	}
